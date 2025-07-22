@@ -1,0 +1,1 @@
+"""Tests for the server functions in the SageMaker AI MCP Server."""
