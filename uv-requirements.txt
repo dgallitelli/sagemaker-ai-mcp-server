@@ -18,9 +18,9 @@ attrs==25.3.0 \
     # via
     #   jsonschema
     #   referencing
-boto3==1.39.11 \
-    --hash=sha256:3027edf20642fe1d5f9dc50a420d0fe2733073ed6a9f0f047b60fe08c3682132 \
-    --hash=sha256:af8f1dad35eceff7658fab43b39b0f55892b6e3dd12308733521cc24dd2c9a02
+boto3==1.39.12 \
+    --hash=sha256:1a715cb40ea9df6b666148b243b5b9adbfa5be50d28e2f660330c0581d94b639 \
+    --hash=sha256:bbf7a8d374b513975c305883ae40e623cc261dbdc25ea86ae435647cae837a15
     # via sagemaker-ai-mcp-server (pyproject.toml)
 botocore==1.39.11 \
     --hash=sha256:1545352931a8a186f3e977b1e1a4542d7d434796e274c3c62efd0210b5ea76dc \
