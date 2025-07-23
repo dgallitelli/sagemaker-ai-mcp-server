@@ -79,3 +79,27 @@ async def describe_endpoint_config(endpoint_config_name: str) -> Dict[str, Any]:
     logger.info(f'Describing SageMaker Endpoint Config: {endpoint_config_name}')
     response = client.describe_endpoint_config(EndpointConfigName=endpoint_config_name)
     return response
+
+
+async def describe_training_job(training_job_name: str) -> Dict[str, Any]:
+    """Describe a SageMaker Training Job."""
+    client = get_sagemaker_client()
+    logger.info(f'Describing SageMaker Training Job: {training_job_name}')
+    response = client.describe_training_job(TrainingJobName=training_job_name)
+    return response
+
+
+async def list_training_jobs() -> List[Dict[str, Any]]:
+    """List all SageMaker Training Jobs."""
+    client = get_sagemaker_client()
+    logger.info('Listing SageMaker Training Jobs...')
+    response = client.list_training_jobs()
+    return response.get('TrainingJobSummaries', [])
+
+
+async def stop_training_job(training_job_name: str) -> None:
+    """Stop a SageMaker Training Job."""
+    client = get_sagemaker_client()
+    logger.info(f'Stopping SageMaker Training Job: {training_job_name}')
+    client.stop_training_job(TrainingJobName=training_job_name)
+    logger.info(f'Training Job {training_job_name} stopped successfully.')  
