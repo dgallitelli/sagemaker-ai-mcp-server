@@ -7,11 +7,14 @@ from sagemaker_ai_mcp_server.helpers import (
     delete_endpoint_config,
     describe_endpoint,
     describe_endpoint_config,
+    describe_training_job,
     get_aws_session,
     get_region,
     get_sagemaker_client,
     list_endpoint_configs,
     list_endpoints,
+    list_training_jobs,
+    stop_training_job,
 )
 from unittest.mock import MagicMock, patch
 
@@ -156,3 +159,46 @@ class TestHelpers:
             EndpointConfigName='test-config'
         )
         assert response == expected_response
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_describe_training_job(self, mock_get_sagemaker_client):
+        """Test describe_training_job function."""
+        mock_client = MagicMock()
+        expected_response = {'TrainingJobName': 'test-job', 'TrainingJobStatus': 'Completed'}
+        mock_client.describe_training_job.return_value = expected_response
+        mock_get_sagemaker_client.return_value = mock_client
+
+        response = await describe_training_job('test-job')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.describe_training_job.assert_called_once_with(TrainingJobName='test-job')
+        assert response == expected_response
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_training_jobs(self, mock_get_sagemaker_client):
+        """Test list_training_jobs function."""
+        mock_client = MagicMock()
+        mock_client.list_training_jobs.return_value = {
+            'TrainingJobSummaries': [{'TrainingJobName': 'test-job'}]
+        }
+        mock_get_sagemaker_client.return_value = mock_client
+
+        jobs = await list_training_jobs()
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.list_training_jobs.assert_called_once()
+        assert jobs == [{'TrainingJobName': 'test-job'}]
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_stop_training_job(self, mock_get_sagemaker_client):
+        """Test stop_training_job function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        await stop_training_job('test-job')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.stop_training_job.assert_called_once_with(TrainingJobName='test-job')
