@@ -8,8 +8,11 @@ from sagemaker_ai_mcp_server.helpers import (
     delete_endpoint_config,
     describe_endpoint,
     describe_endpoint_config,
+    describe_training_job,
     list_endpoint_configs,
     list_endpoints,
+    list_training_jobs,
+    stop_training_job,
 )
 from typing import Annotated, Any, Dict, List
 
@@ -27,7 +30,10 @@ mcp = FastMCP(
     - Delete SageMaker Endpoint Configurations
     - Describe SageMaker Endpoints
     - Describe SageMaker Endpoint Configurations
-    
+    - List SageMaker Training Jobs
+    - Describe SageMaker Training Jobs
+    - Stop SageMaker Training Jobs
+
     Use these tools to manage your SageMaker resources effectively.
     """,
     dependencies=[
@@ -263,6 +269,113 @@ async def describe_endpoint_config_sagemaker(
         logger.error(f'Error describing config {endpoint_config_name}: {e}')
         err_msg = f'Failed to describe config {endpoint_config_name}: {e}'
         raise ValueError(err_msg)
+
+
+@mcp.tool(name='list_training_jobs_sagemaker', description='List SageMaker Training Jobs')
+async def list_training_jobs_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Training Jobs.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Training Jobs in your
+    account in the current region. This is typically used to see what training
+    jobs are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    jobs = await list_training_jobs_sagemaker()
+    print(jobs)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'training_jobs': A list of dictionaries, each representing a SageMaker
+      Training Job with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Training Jobs.
+    """
+    try:
+        jobs = await list_training_jobs()
+        return {'training_jobs': jobs}
+    except Exception as e:
+        logger.error(f'Error listing training jobs: {e}')
+        raise ValueError(f'Failed to list training jobs: {e}')
+
+
+@mcp.tool(name='describe_training_job_sagemaker', description='Describe a SageMaker Training Job')
+async def describe_training_job_sagemaker(
+    training_job_name: Annotated[
+        str, Field(description='The name of the SageMaker Training Job to describe')
+    ],
+) -> Dict[str, Any]:
+    """Describe a specified SageMaker Training Job.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker Training Job
+    by providing its name. This returns comprehensive information about the
+    job's configuration, status, and other details.
+
+    ## Example
+
+    ```python
+    job_details = await describe_training_job_sagemaker(training_job_name='my-training-job')
+    print(job_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker
+    Training Job.
+
+    ## Returns
+    A dictionary containing the training job details.
+    """
+    try:
+        job_details = await describe_training_job(training_job_name)
+        return job_details
+    except Exception as e:
+        logger.error(f'Error describing training job {training_job_name}: {e}')
+        raise ValueError(f'Failed to describe training job {training_job_name}: {e}')
+
+
+@mcp.tool(name='stop_training_job_sagemaker', description='Stop a SageMaker Training Job')
+async def stop_training_job_sagemaker(
+    training_job_name: Annotated[
+        str, Field(description='The name of the SageMaker Training Job to stop')
+    ],
+) -> Dict[str, str]:
+    """Stop a specified SageMaker Training Job.
+
+    ## Usage
+
+    Use this tool to stop a SageMaker Training Job by providing its name.
+    This is useful for terminating jobs that are no longer needed or are taking
+    too long to complete.
+
+    ## Example
+
+    ```python
+    result = await stop_training_job_sagemaker(training_job_name='my-training-job')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await stop_training_job(training_job_name)
+        return {'message': f"Training Job '{training_job_name}' stopped successfully"}
+    except Exception as e:
+        logger.error(f'Error stopping training job {training_job_name}: {e}')
+        raise ValueError(f'Failed to stop training job {training_job_name}: {e}')
 
 
 def main():
