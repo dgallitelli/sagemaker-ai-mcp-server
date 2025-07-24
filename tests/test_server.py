@@ -4,13 +4,21 @@ import pytest
 from sagemaker_ai_mcp_server.server import (
     delete_endpoint_config_sagemaker,
     delete_endpoint_sagemaker,
+    delete_pipeline_sagemaker,
     describe_endpoint_config_sagemaker,
     describe_endpoint_sagemaker,
+    describe_pipeline_definition_for_execution_sagemaker,
+    describe_pipeline_execution_sagemaker,
+    describe_pipeline_sagemaker,
     describe_processing_job_sagemaker,
     describe_training_job_sagemaker,
     describe_transform_job_sagemaker,
     list_endpoint_configs_sagemaker,
     list_endpoints_sagemaker,
+    list_pipeline_execution_steps_sagemaker,
+    list_pipeline_executions_sagemaker,
+    list_pipeline_parameters_for_execution_sagemaker,
+    list_pipelines_sagemaker,
     list_processing_jobs_sagemaker,
     list_training_jobs_sagemaker,
     list_transform_jobs_sagemaker,
@@ -85,7 +93,7 @@ async def test_describe_endpoint_sagemaker():
         result = await describe_endpoint_sagemaker(endpoint_name)
 
         mock_describe_endpoint.assert_called_once_with(endpoint_name)
-        assert result == expected_result
+        assert result == {'endpoint_details': expected_result}
 
 
 @pytest.mark.asyncio
@@ -103,7 +111,7 @@ async def test_describe_endpoint_config_sagemaker():
         result = await describe_endpoint_config_sagemaker(config_name)
 
         mock_describe_config.assert_called_once_with(config_name)
-        assert result == expected_result
+        assert result == {'endpoint_config_details': expected_result}
 
 
 @pytest.mark.asyncio
@@ -121,7 +129,7 @@ async def test_describe_training_job_sagemaker():
         result = await describe_training_job_sagemaker(job_name)
 
         mock_describe_job.assert_called_once_with(job_name)
-        assert result == expected_result
+        assert result == {'training_job_details': expected_result}
 
 
 @pytest.mark.asyncio
@@ -190,7 +198,7 @@ async def test_describe_processing_job_sagemaker():
         result = await describe_processing_job_sagemaker(job_name)
 
         mock_describe_processing.assert_called_once_with(job_name)
-        assert result == expected_result
+        assert result == {'processing_job_details': expected_result}
 
 
 @pytest.mark.asyncio
@@ -240,7 +248,7 @@ async def test_describe_transform_job_sagemaker():
         result = await describe_transform_job_sagemaker(job_name)
 
         mock_describe_transform.assert_called_once_with(job_name)
-        assert result == expected_result
+        assert result == {'transform_job_details': expected_result}
 
 
 @pytest.mark.asyncio
@@ -253,3 +261,161 @@ async def test_stop_transform_job_sagemaker():
         mock_stop_transform.assert_called_once_with(job_name)
         expected_msg = f"Transform job '{job_name}' stopped successfully"
         assert {'message': expected_msg} == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
+async def test_list_pipeline_executions_sagemaker():
+    """Test the list_pipeline_executions_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_pipeline_executions') as mock_list_executions:
+        mock_list_executions.return_value = [
+            {
+                'PipelineExecutionArn': 'arn:aws:sagemaker:us-west-2:123456789012:pipeline/test-pipeline/execution/test-execution-1'
+            },
+            {
+                'PipelineExecutionArn': 'arn:aws:sagemaker:us-west-2:123456789012:pipeline/test-pipeline/execution/test-execution-2'
+            },
+        ]
+
+        result = await list_pipeline_executions_sagemaker('test-pipeline')
+
+        mock_list_executions.assert_called_once_with('test-pipeline')
+        assert result == {
+            'pipeline_executions': [
+                {
+                    'PipelineExecutionArn': 'arn:aws:sagemaker:us-west-2:123456789012:pipeline/test-pipeline/execution/test-execution-1'
+                },
+                {
+                    'PipelineExecutionArn': 'arn:aws:sagemaker:us-west-2:123456789012:pipeline/test-pipeline/execution/test-execution-2'
+                },
+            ]
+        }
+
+
+@pytest.mark.asyncio
+async def test_list_pipeline_execution_steps_sagemaker():
+    """Test the list_pipeline_execution_steps_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_pipeline_execution_steps') as mock_list_steps:
+        mock_list_steps.return_value = [
+            {'StepName': 'test-step-1'},
+            {'StepName': 'test-step-2'},
+        ]
+
+        result = await list_pipeline_execution_steps_sagemaker('test-pipeline')
+
+        mock_list_steps.assert_called_once_with('test-pipeline')
+        assert result == {
+            'pipeline_execution_steps': [
+                {'StepName': 'test-step-1'},
+                {'StepName': 'test-step-2'},
+            ]
+        }
+
+
+@pytest.mark.asyncio
+async def test_list_pipeline_parameters_for_execution_sagemaker():
+    """Test the list_pipeline_parameters_for_execution_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.list_pipeline_parameters_for_execution'
+    ) as mock_list_params:
+        mock_list_params.return_value = [
+            {'Name': 'param1', 'Value': 'value1'},
+            {'Name': 'param2', 'Value': 'value2'},
+        ]
+
+        result = await list_pipeline_parameters_for_execution_sagemaker('test-pipeline')
+
+        mock_list_params.assert_called_once_with('test-pipeline')
+        assert result == {
+            'pipeline_parameters': [
+                {'Name': 'param1', 'Value': 'value1'},
+                {'Name': 'param2', 'Value': 'value2'},
+            ]
+        }
+
+
+@pytest.mark.asyncio
+async def test_list_pipelines_sagemaker():
+    """Test the list_pipelines_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_pipelines') as mock_list_pipelines:
+        mock_list_pipelines.return_value = [
+            {'PipelineName': 'test-pipeline-1'},
+            {'PipelineName': 'test-pipeline-2'},
+        ]
+
+        result = await list_pipelines_sagemaker()
+
+        mock_list_pipelines.assert_called_once()
+        assert result == {
+            'pipelines': [
+                {'PipelineName': 'test-pipeline-1'},
+                {'PipelineName': 'test-pipeline-2'},
+            ]
+        }
+
+
+@pytest.mark.asyncio
+async def test_describe_pipeline_sagemaker():
+    """Test the describe_pipeline_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.describe_pipeline') as mock_describe_pipeline:
+        pipeline_name = 'test-pipeline'
+        expected_result = {
+            'PipelineName': pipeline_name,
+            'PipelineArn': f'arn:aws:sagemaker:us-west-2:123456789012:pipeline/{pipeline_name}',
+            'CreationTime': '2023-01-01T00:00:00',
+        }
+        mock_describe_pipeline.return_value = expected_result
+
+        result = await describe_pipeline_sagemaker(pipeline_name)
+
+        mock_describe_pipeline.assert_called_once_with(pipeline_name)
+        assert result == {'pipeline_details': expected_result}
+
+
+@pytest.mark.asyncio
+async def test_delete_pipeline_sagemaker():
+    """Test the delete_pipeline_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.delete_pipeline') as mock_delete_pipeline:
+        pipeline_name = 'test-pipeline'
+        await delete_pipeline_sagemaker(pipeline_name)
+
+        mock_delete_pipeline.assert_called_once_with(pipeline_name)
+        expected_msg = f"Pipeline '{pipeline_name}' deleted successfully"
+        assert {'message': expected_msg} == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
+async def test_describe_pipeline_definition_for_execution_sagemaker():
+    """Test the describe_pipeline_definition_for_execution_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.describe_pipeline_definition_for_execution'
+    ) as mock_describe_definition:
+        execution_arn = 'arn:aws:sagemaker:us-west-2:123456789012:pipeline/test-pipeline/execution/test-execution'
+        expected_result = {
+            'PipelineDefinition': 'test-definition',
+            'CreationTime': '2023-01-01T00:00:00',
+        }
+        mock_describe_definition.return_value = expected_result
+
+        result = await describe_pipeline_definition_for_execution_sagemaker(execution_arn)
+
+        mock_describe_definition.assert_called_once_with(execution_arn)
+        assert result == {'pipeline_definition': expected_result}
+
+
+@pytest.mark.asyncio
+async def test_describe_pipeline_execution_sagemaker():
+    """Test the describe_pipeline_execution_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.describe_pipeline_execution'
+    ) as mock_describe_execution:
+        execution_arn = 'arn:aws:sagemaker:us-west-2:123456789012:pipeline/test-pipeline/execution/test-execution'
+        expected_result = {
+            'PipelineExecutionStatus': 'InProgress',
+            'CreationTime': '2023-01-01T00:00:00',
+        }
+        mock_describe_execution.return_value = expected_result
+
+        result = await describe_pipeline_execution_sagemaker(execution_arn)
+
+        mock_describe_execution.assert_called_once_with(execution_arn)
+        assert result == {'pipeline_execution_details': expected_result}
