@@ -6,16 +6,26 @@ from pydantic import Field
 from sagemaker_ai_mcp_server.helpers import (
     delete_endpoint,
     delete_endpoint_config,
+    delete_pipeline,
     describe_endpoint,
     describe_endpoint_config,
+    describe_pipeline,
+    describe_pipeline_definition_for_execution,
+    describe_pipeline_execution,
     describe_processing_job,
     describe_training_job,
     describe_transform_job,
     list_endpoint_configs,
     list_endpoints,
+    list_pipeline_execution_steps,
+    list_pipeline_executions,
+    list_pipeline_parameters_for_execution,
+    list_pipelines,
     list_processing_jobs,
     list_training_jobs,
     list_transform_jobs,
+    start_pipeline_execution,
+    stop_pipeline_execution,
     stop_processing_job,
     stop_training_job,
     stop_transform_job,
@@ -45,7 +55,17 @@ mcp = FastMCP(
     - List SageMaker Transform Jobs
     - Describe SageMaker Transform Jobs
     - Stop SageMaker Transform Jobs
-
+    - List SageMaker Pipelines
+    - Describe SageMaker Pipelines
+    - Delete SageMaker Pipelines
+    - List Pipeline Executions
+    - List Pipeline Execution Steps
+    - List Pipeline Parameters for Execution
+    - Describe Pipeline Definition for Execution
+    - Describe Pipeline Execution
+    - Start Pipeline Execution
+    - Stop Pipeline Execution
+       
     Use these tools to manage your SageMaker resources effectively.
     """,
     dependencies=[
@@ -233,7 +253,7 @@ async def describe_endpoint_sagemaker(
     """
     try:
         endpoint_details = await describe_endpoint(endpoint_name)
-        return endpoint_details
+        return {'endpoint_details': endpoint_details}
     except Exception as e:
         logger.error(f'Error describing endpoint {endpoint_name}: {e}')
         raise ValueError(f'Failed to describe endpoint {endpoint_name}: {e}')
@@ -276,7 +296,7 @@ async def describe_endpoint_config_sagemaker(
     """
     try:
         config_details = await describe_endpoint_config(endpoint_config_name)
-        return config_details
+        return {'endpoint_config_details': config_details}
     except Exception as e:
         logger.error(f'Error describing config {endpoint_config_name}: {e}')
         err_msg = f'Failed to describe config {endpoint_config_name}: {e}'
@@ -348,7 +368,7 @@ async def describe_training_job_sagemaker(
     """
     try:
         job_details = await describe_training_job(training_job_name)
-        return job_details
+        return {'training_job_details': job_details}
     except Exception as e:
         logger.error(f'Error describing training job {training_job_name}: {e}')
         raise ValueError(f'Failed to describe training job {training_job_name}: {e}')
@@ -457,7 +477,7 @@ async def describe_processing_job_sagemaker(
     """
     try:
         job_details = await describe_processing_job(processing_job_name)
-        return job_details
+        return {'processing_job_details': job_details}
     except Exception as e:
         logger.error(f'Error describing processing job {processing_job_name}: {e}')
         raise ValueError(f'Failed to describe processing job {processing_job_name}: {e}')
@@ -566,7 +586,7 @@ async def describe_transform_job_sagemaker(
     """
     try:
         job_details = await describe_transform_job(transform_job_name)
-        return job_details
+        return {'transform_job_details': job_details}
     except Exception as e:
         logger.error(f'Error describing transform job {transform_job_name}: {e}')
         raise ValueError(f'Failed to describe transform job {transform_job_name}: {e}')
@@ -606,6 +626,415 @@ async def stop_transform_job_sagemaker(
     except Exception as e:
         logger.error(f'Error stopping transform job {transform_job_name}: {e}')
         raise ValueError(f'Failed to stop transform job {transform_job_name}: {e}')
+
+
+@mcp.tool(name='list_pipelines_sagemaker', description='List SageMaker Pipelines')
+async def list_pipelines_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Pipelines.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Pipelines in your account
+    in the current region. This is typically used to see what pipelines are
+    available before performing operations on them.
+
+    ## Example
+
+    ```python
+    pipelines = await list_pipelines_sagemaker()
+    print(pipelines)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'pipelines': A list of dictionaries, each representing a SageMaker
+      Pipeline with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Pipelines.
+    """
+    try:
+        pipelines = await list_pipelines()
+        return {'pipelines': pipelines}
+    except Exception as e:
+        logger.error(f'Error listing pipelines: {e}')
+        raise ValueError(f'Failed to list pipelines: {e}')
+
+
+@mcp.tool(name='describe_pipeline_sagemaker', description='Describe a SageMaker Pipeline')
+async def describe_pipeline_sagemaker(
+    pipeline_name: Annotated[
+        str, Field(description='The name of the SageMaker Pipeline to describe')
+    ],
+) -> Dict[str, Any]:
+    """Describe a specified SageMaker Pipeline.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker Pipeline by
+    providing its name. This returns comprehensive information about the
+    pipeline's configuration, status, and other details.
+
+    ## Example
+
+    ```python
+    pipeline_details = await describe_pipeline_sagemaker(pipeline_name='my-pipeline')
+    print(pipeline_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker
+    Pipeline.
+
+    ## Returns
+    A dictionary containing the pipeline details.
+    """
+    try:
+        pipeline_details = await describe_pipeline(pipeline_name)
+        return {'pipeline_details': pipeline_details}
+    except Exception as e:
+        logger.error(f'Error describing pipeline {pipeline_name}: {e}')
+        raise ValueError(f'Failed to describe pipeline {pipeline_name}: {e}')
+
+
+@mcp.tool(name='delete_pipeline_sagemaker', description='Delete a SageMaker Pipeline')
+async def delete_pipeline_sagemaker(
+    pipeline_name: Annotated[
+        str, Field(description='The name of the SageMaker Pipeline to delete')
+    ],
+) -> Dict[str, str]:
+    """Delete a specified SageMaker Pipeline.
+
+    ## Usage
+
+    Use this tool to delete a SageMaker Pipeline by providing its name.
+    This is useful for cleaning up pipelines that are no longer needed.
+
+    ## Example
+
+    ```python
+    result = await delete_pipeline_sagemaker(pipeline_name='my-pipeline')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await delete_pipeline(pipeline_name)
+        return {'message': f"Pipeline '{pipeline_name}' deleted successfully"}
+    except Exception as e:
+        logger.error(f'Error deleting pipeline {pipeline_name}: {e}')
+        raise ValueError(f'Failed to delete pipeline {pipeline_name}: {e}')
+
+
+@mcp.tool(
+    name='list_pipeline_executions_sagemaker',
+    description='List all Pipeline Executions for a SageMaker Pipeline',
+)
+async def list_pipeline_executions_sagemaker(
+    pipeline_name: Annotated[
+        str, Field(description='The name of the SageMaker Pipeline to list executions for')
+    ],
+) -> Dict[str, List]:
+    """List all Pipeline Executions for a specified SageMaker Pipeline.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all executions for a specific SageMaker
+    Pipeline by providing its name. This helps you track the execution history
+    of the pipeline.
+
+    ## Example
+
+    ```python
+    executions = await list_pipeline_executions_sagemaker(pipeline_name='my-pipeline')
+    print(executions)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'pipeline_executions': A list of dictionaries, each representing a
+      SageMaker Pipeline Execution with its details.
+
+    ## Returns
+    A dictionary containing a list of Pipeline Executions.
+    """
+    try:
+        executions = await list_pipeline_executions(pipeline_name)
+        return {'pipeline_executions': executions}
+    except Exception as e:
+        logger.error(f'Error listing pipeline executions for {pipeline_name}: {e}')
+        raise ValueError(f'Failed to list pipeline executions for {pipeline_name}: {e}')
+
+
+@mcp.tool(
+    name='list_pipeline_execution_steps_sagemaker',
+    description='List all Pipeline Execution Steps for a SageMaker Pipeline Execution',
+)
+async def list_pipeline_execution_steps_sagemaker(
+    pipeline_execution_arn: Annotated[
+        str, Field(description='The ARN of the SageMaker Pipeline Execution to list steps for')
+    ],
+) -> Dict[str, List]:
+    """List all Pipeline Execution Steps for a specified SageMaker Pipeline Execution.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all steps for a specific SageMaker
+    Pipeline Execution by providing its ARN. This helps you track the execution
+    flow and status of each step in the pipeline.
+
+    ## Example
+
+    ```python
+    steps = await list_pipeline_execution_steps_sagemaker(
+        pipeline_execution_arn='arn:aws:sagemaker:...'
+    )
+    print(steps)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'pipeline_execution_steps': A list of dictionaries, each representing a
+      step in the SageMaker Pipeline Execution with its details.
+
+    ## Returns
+    A dictionary containing a list of Pipeline Execution Steps.
+    """
+    try:
+        steps = await list_pipeline_execution_steps(pipeline_execution_arn)
+        return {'pipeline_execution_steps': steps}
+    except Exception as e:
+        logger.error(f'Error listing pipeline execution steps for {pipeline_execution_arn}: {e}')
+        raise ValueError(
+            f'Failed to list pipeline execution steps for {pipeline_execution_arn}: {e}'
+        )
+
+
+@mcp.tool(
+    name='list_pipeline_parameters_for_execution_sagemaker',
+    description='List Pipeline Parameters for a SageMaker Pipeline Execution',
+)
+async def list_pipeline_parameters_for_execution_sagemaker(
+    pipeline_execution_arn: Annotated[
+        str,
+        Field(description='The ARN of the SageMaker Pipeline Execution to list parameters for'),
+    ],
+) -> Dict[str, List]:
+    """List Pipeline Parameters for a specified SageMaker Pipeline Execution.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all parameters for a specific SageMaker
+    Pipeline Execution by providing its ARN. This helps you understand the
+    input parameters used in the execution.
+
+    ## Example
+
+    ```python
+    parameters = await list_pipeline_parameters_for_execution_sagemaker(
+        pipeline_execution_arn='arn:aws:sagemaker:...'
+    )
+    print(parameters)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'pipeline_parameters': A list of dictionaries, each representing a
+      parameter in the SageMaker Pipeline Execution with its details.
+
+    ## Returns
+    A dictionary containing a list of Pipeline Parameters.
+    """
+    try:
+        parameters = await list_pipeline_parameters_for_execution(pipeline_execution_arn)
+        return {'pipeline_parameters': parameters}
+    except Exception as e:
+        logger.error(f'Error listing pipeline parameters for {pipeline_execution_arn}: {e}')
+        raise ValueError(f'Failed to list pipeline parameters for {pipeline_execution_arn}: {e}')
+
+
+@mcp.tool(
+    name='describe_pipeline_definition_for_execution_sagemaker',
+    description='Describe Pipeline Definition for a SageMaker Pipeline Execution',
+)
+async def describe_pipeline_definition_for_execution_sagemaker(
+    pipeline_execution_arn: Annotated[
+        str,
+        Field(
+            description='The ARN of the SageMaker Pipeline Execution to describe definition for'
+        ),
+    ],
+) -> Dict[str, Any]:
+    """Describe the Pipeline Definition for a specified SageMaker Pipeline Execution.
+
+    ## Usage
+
+    Use this tool to retrieve the definition of a specific SageMaker Pipeline Execution by providing its ARN.
+    This helps you understand the structure and components of the pipeline.
+
+    ## Example
+
+    ```python
+    definition = await describe_pipeline_definition_for_execution_sagemaker(
+        pipeline_execution_arn='arn:aws:sagemaker:...'
+    )
+    print(definition)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'pipeline_definition': A dictionary representing the definition of the SageMaker Pipeline Execution.
+
+    ## Returns
+    A dictionary containing the Pipeline Definition.
+    """
+    try:
+        definition = await describe_pipeline_definition_for_execution(pipeline_execution_arn)
+        return {'pipeline_definition': definition}
+    except Exception as e:
+        logger.error(f'Error describing pipeline definition for {pipeline_execution_arn}: {e}')
+        raise ValueError(
+            f'Failed to describe pipeline definition for {pipeline_execution_arn}: {e}'
+        )
+
+
+@mcp.tool(
+    name='describe_pipeline_execution_sagemaker',
+    description='Describe a SageMaker Pipeline Execution',
+)
+async def describe_pipeline_execution_sagemaker(
+    pipeline_execution_arn: Annotated[
+        str,
+        Field(description='The ARN of the SageMaker Pipeline Execution to describe'),
+    ],
+) -> Dict[str, Any]:
+    """Describe a specified SageMaker Pipeline Execution.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker Pipeline Execution
+    by providing its ARN. This returns comprehensive information about the execution's
+    status, parameters, and other details.
+
+    ## Example
+
+    ```python
+    execution_details = await describe_pipeline_execution_sagemaker(
+        pipeline_execution_arn='arn:aws:sagemaker:...'
+    )
+    print(execution_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker Pipeline Execution.
+
+    ## Returns
+    A dictionary containing the pipeline execution details.
+    """
+    try:
+        execution_details = await describe_pipeline_execution(pipeline_execution_arn)
+        return {'pipeline_execution_details': execution_details}
+    except Exception as e:
+        logger.error(f'Error describing pipeline execution {pipeline_execution_arn}: {e}')
+        raise ValueError(f'Failed to describe pipeline execution {pipeline_execution_arn}: {e}')
+
+
+@mcp.tool(
+    name='start_pipeline_execution_sagemaker', description='Start a SageMaker Pipeline Execution'
+)
+async def start_pipeline_execution_sagemaker(
+    pipeline_name: Annotated[
+        str, Field(description='The name of the SageMaker Pipeline to start execution for')
+    ],
+    parameters: Annotated[
+        Dict[str, Any],
+        Field(description='A dictionary of parameters to pass to the pipeline execution'),
+    ],
+) -> Dict[str, str]:
+    """Start a specified SageMaker Pipeline Execution.
+
+    ## Usage
+
+    Use this tool to start a SageMaker Pipeline Execution by providing the pipeline name
+    and parameters. This is useful for triggering the execution of a pipeline with specific inputs.
+
+    ## Example
+
+    ```python
+    result = await start_pipeline_execution_sagemaker(
+        pipeline_name='my-pipeline', parameters={'param1': 'value1', 'param2': 'value2'}
+    )
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        execution_arn = await start_pipeline_execution(pipeline_name, parameters)
+        return {
+            'message': f"Pipeline '{pipeline_name}' started successfully with ARN: {execution_arn}"
+        }
+    except Exception as e:
+        logger.error(f'Error starting pipeline execution for {pipeline_name}: {e}')
+        raise ValueError(f'Failed to start pipeline execution for {pipeline_name}: {e}')
+
+
+@mcp.tool(
+    name='stop_pipeline_execution_sagemaker', description='Stop a SageMaker Pipeline Execution'
+)
+async def stop_pipeline_execution_sagemaker(
+    pipeline_execution_arn: Annotated[
+        str, Field(description='The ARN of the SageMaker Pipeline Execution to stop')
+    ],
+) -> Dict[str, str]:
+    """Stop a specified SageMaker Pipeline Execution.
+
+    ## Usage
+
+    Use this tool to stop a SageMaker Pipeline Execution by providing its ARN.
+    This is useful for terminating executions that are no longer needed or are taking
+    too long to complete.
+
+    ## Example
+
+    ```python
+    result = await stop_pipeline_execution_sagemaker(
+        pipeline_execution_arn='arn:aws:sagemaker:...'
+    )
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await stop_pipeline_execution(pipeline_execution_arn)
+        return {'message': f"Pipeline Execution '{pipeline_execution_arn}' stopped successfully"}
+    except Exception as e:
+        logger.error(f'Error stopping pipeline execution {pipeline_execution_arn}: {e}')
+        raise ValueError(f'Failed to stop pipeline execution {pipeline_execution_arn}: {e}')
 
 
 def main():
