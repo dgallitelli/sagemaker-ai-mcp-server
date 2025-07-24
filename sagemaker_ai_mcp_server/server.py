@@ -8,10 +8,13 @@ from sagemaker_ai_mcp_server.helpers import (
     delete_endpoint_config,
     describe_endpoint,
     describe_endpoint_config,
+    describe_processing_job,
     describe_training_job,
     list_endpoint_configs,
     list_endpoints,
+    list_processing_jobs,
     list_training_jobs,
+    stop_processing_job,
     stop_training_job,
 )
 from typing import Annotated, Any, Dict, List
@@ -33,6 +36,9 @@ mcp = FastMCP(
     - List SageMaker Training Jobs
     - Describe SageMaker Training Jobs
     - Stop SageMaker Training Jobs
+    - List SageMaker Processing Jobs
+    - Describe SageMaker Processing Jobs
+    - Stop SageMaker Processing Jobs
 
     Use these tools to manage your SageMaker resources effectively.
     """,
@@ -376,6 +382,115 @@ async def stop_training_job_sagemaker(
     except Exception as e:
         logger.error(f'Error stopping training job {training_job_name}: {e}')
         raise ValueError(f'Failed to stop training job {training_job_name}: {e}')
+
+
+@mcp.tool(name='list_processing_jobs_sagemaker', description='List SageMaker Processing Jobs')
+async def list_processing_jobs_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Processing Jobs.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Processing Jobs in your
+    account in the current region. This is typically used to see what processing
+    jobs are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    jobs = await list_processing_jobs_sagemaker()
+    print(jobs)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'processing_jobs': A list of dictionaries, each representing a SageMaker
+      Processing Job with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Processing Jobs.
+    """
+    try:
+        jobs = await list_processing_jobs()
+        return {'processing_jobs': jobs}
+    except Exception as e:
+        logger.error(f'Error listing processing jobs: {e}')
+        raise ValueError(f'Failed to list processing jobs: {e}')
+
+
+@mcp.tool(
+    name='describe_processing_job_sagemaker', description='Describe a SageMaker Processing Job'
+)
+async def describe_processing_job_sagemaker(
+    processing_job_name: Annotated[
+        str, Field(description='The name of the SageMaker Processing Job to describe')
+    ],
+) -> Dict[str, Any]:
+    """Describe a specified SageMaker Processing Job.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker Processing Job
+    by providing its name. This returns comprehensive information about the
+    job's configuration, status, and other details.
+
+    ## Example
+
+    ```python
+    job_details = await describe_processing_job_sagemaker(processing_job_name='my-processing-job')
+    print(job_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker
+    Processing Job.
+
+    ## Returns
+    A dictionary containing the processing job details.
+    """
+    try:
+        job_details = await describe_processing_job(processing_job_name)
+        return job_details
+    except Exception as e:
+        logger.error(f'Error describing processing job {processing_job_name}: {e}')
+        raise ValueError(f'Failed to describe processing job {processing_job_name}: {e}')
+
+
+@mcp.tool(name='stop_processing_job_sagemaker', description='Stop a SageMaker Processing Job')
+async def stop_processing_job_sagemaker(
+    processing_job_name: Annotated[
+        str, Field(description='The name of the SageMaker Processing Job to stop')
+    ],
+) -> Dict[str, str]:
+    """Stop a specified SageMaker Processing Job.
+
+    ## Usage
+
+    Use this tool to stop a SageMaker Processing Job by providing its name.
+    This is useful for terminating jobs that are no longer needed or are taking
+    too long to complete.
+
+    ## Example
+
+    ```python
+    result = await stop_processing_job_sagemaker(processing_job_name='my-processing-job')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await stop_processing_job(processing_job_name)
+        return {'message': f"Processing Job '{processing_job_name}' stopped successfully"}
+    except Exception as e:
+        logger.error(f'Error stopping processing job {processing_job_name}: {e}')
+        raise ValueError(f'Failed to stop processing job {processing_job_name}: {e}')
 
 
 def main():
