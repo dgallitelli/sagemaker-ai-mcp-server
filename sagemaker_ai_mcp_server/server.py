@@ -10,12 +10,15 @@ from sagemaker_ai_mcp_server.helpers import (
     describe_endpoint_config,
     describe_processing_job,
     describe_training_job,
+    describe_transform_job,
     list_endpoint_configs,
     list_endpoints,
     list_processing_jobs,
     list_training_jobs,
+    list_transform_jobs,
     stop_processing_job,
     stop_training_job,
+    stop_transform_job,
 )
 from typing import Annotated, Any, Dict, List
 
@@ -39,6 +42,9 @@ mcp = FastMCP(
     - List SageMaker Processing Jobs
     - Describe SageMaker Processing Jobs
     - Stop SageMaker Processing Jobs
+    - List SageMaker Transform Jobs
+    - Describe SageMaker Transform Jobs
+    - Stop SageMaker Transform Jobs
 
     Use these tools to manage your SageMaker resources effectively.
     """,
@@ -491,6 +497,115 @@ async def stop_processing_job_sagemaker(
     except Exception as e:
         logger.error(f'Error stopping processing job {processing_job_name}: {e}')
         raise ValueError(f'Failed to stop processing job {processing_job_name}: {e}')
+
+
+@mcp.tool(name='list_transform_jobs_sagemaker', description='List SageMaker Transform Jobs')
+async def list_transform_jobs_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Transform Jobs.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Transform Jobs in your
+    account in the current region. This is typically used to see what transform
+    jobs are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    jobs = await list_transform_jobs_sagemaker()
+    print(jobs)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'transform_jobs': A list of dictionaries, each representing a SageMaker
+      Transform Job with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Transform Jobs.
+    """
+    try:
+        jobs = await list_transform_jobs()
+        return {'transform_jobs': jobs}
+    except Exception as e:
+        logger.error(f'Error listing transform jobs: {e}')
+        raise ValueError(f'Failed to list transform jobs: {e}')
+
+
+@mcp.tool(
+    name='describe_transform_job_sagemaker', description='Describe a SageMaker Transform Job'
+)
+async def describe_transform_job_sagemaker(
+    transform_job_name: Annotated[
+        str, Field(description='The name of the SageMaker Transform Job to describe')
+    ],
+) -> Dict[str, Any]:
+    """Describe a specified SageMaker Transform Job.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker Transform Job
+    by providing its name. This returns comprehensive information about the
+    job's configuration, status, and other details.
+
+    ## Example
+
+    ```python
+    job_details = await describe_transform_job_sagemaker(transform_job_name='my-transform-job')
+    print(job_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker
+    Transform Job.
+
+    ## Returns
+    A dictionary containing the transform job details.
+    """
+    try:
+        job_details = await describe_transform_job(transform_job_name)
+        return job_details
+    except Exception as e:
+        logger.error(f'Error describing transform job {transform_job_name}: {e}')
+        raise ValueError(f'Failed to describe transform job {transform_job_name}: {e}')
+
+
+@mcp.tool(name='stop_transform_job_sagemaker', description='Stop a SageMaker Transform Job')
+async def stop_transform_job_sagemaker(
+    transform_job_name: Annotated[
+        str, Field(description='The name of the SageMaker Transform Job to stop')
+    ],
+) -> Dict[str, str]:
+    """Stop a specified SageMaker Transform Job.
+
+    ## Usage
+
+    Use this tool to stop a SageMaker Transform Job by providing its name.
+    This is useful for terminating jobs that are no longer needed or are taking
+    too long to complete.
+
+    ## Example
+
+    ```python
+    result = await stop_transform_job_sagemaker(transform_job_name='my-transform-job')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await stop_transform_job(transform_job_name)
+        return {'message': f"Transform Job '{transform_job_name}' stopped successfully"}
+    except Exception as e:
+        logger.error(f'Error stopping transform job {transform_job_name}: {e}')
+        raise ValueError(f'Failed to stop transform job {transform_job_name}: {e}')
 
 
 def main():
