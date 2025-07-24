@@ -6,10 +6,13 @@ from sagemaker_ai_mcp_server.server import (
     delete_endpoint_sagemaker,
     describe_endpoint_config_sagemaker,
     describe_endpoint_sagemaker,
+    describe_processing_job_sagemaker,
     describe_training_job_sagemaker,
     list_endpoint_configs_sagemaker,
     list_endpoints_sagemaker,
+    list_processing_jobs_sagemaker,
     list_training_jobs_sagemaker,
+    stop_processing_job_sagemaker,
     stop_training_job_sagemaker,
 )
 from unittest.mock import patch
@@ -144,4 +147,56 @@ async def test_stop_training_job_sagemaker():
 
         mock_stop_job.assert_called_once_with(job_name)
         expected_msg = f"Training job '{job_name}' stopped successfully"
+        assert {'message': expected_msg} == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
+async def test_list_processing_jobs_sagemaker():
+    """Test the list_processing_jobs_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_processing_jobs') as mock_list_processing:
+        mock_list_processing.return_value = [
+            {'ProcessingJobName': 'test-processing-job-1'},
+            {'ProcessingJobName': 'test-processing-job-2'},
+        ]
+
+        result = await list_processing_jobs_sagemaker()
+
+        mock_list_processing.assert_called_once()
+        assert result == {
+            'processing_jobs': [
+                {'ProcessingJobName': 'test-processing-job-1'},
+                {'ProcessingJobName': 'test-processing-job-2'},
+            ]
+        }
+
+
+@pytest.mark.asyncio
+async def test_describe_processing_job_sagemaker():
+    """Test the describe_processing_job_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.describe_processing_job'
+    ) as mock_describe_processing:
+        job_name = 'test-processing-job'
+        expected_result = {
+            'ProcessingJobName': job_name,
+            'ProcessingJobStatus': 'Completed',
+            'CreationTime': '2023-01-01T00:00:00',
+        }
+        mock_describe_processing.return_value = expected_result
+
+        result = await describe_processing_job_sagemaker(job_name)
+
+        mock_describe_processing.assert_called_once_with(job_name)
+        assert result == expected_result
+
+
+@pytest.mark.asyncio
+async def test_stop_processing_job_sagemaker():
+    """Test the stop_processing_job_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.stop_processing_job') as mock_stop_processing:
+        job_name = 'test-processing-job'
+        await stop_processing_job_sagemaker(job_name)
+
+        mock_stop_processing.assert_called_once_with(job_name)
+        expected_msg = f"Processing job '{job_name}' stopped successfully"
         assert {'message': expected_msg} == {'message': expected_msg}

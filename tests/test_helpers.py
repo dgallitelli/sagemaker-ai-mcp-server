@@ -7,13 +7,16 @@ from sagemaker_ai_mcp_server.helpers import (
     delete_endpoint_config,
     describe_endpoint,
     describe_endpoint_config,
+    describe_processing_job,
     describe_training_job,
     get_aws_session,
     get_region,
     get_sagemaker_client,
     list_endpoint_configs,
     list_endpoints,
+    list_processing_jobs,
     list_training_jobs,
+    stop_processing_job,
     stop_training_job,
 )
 from unittest.mock import MagicMock, patch
@@ -202,3 +205,53 @@ class TestHelpers:
 
         mock_get_sagemaker_client.assert_called_once()
         mock_client.stop_training_job.assert_called_once_with(TrainingJobName='test-job')
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_describe_processing_job(self, mock_get_sagemaker_client):
+        """Test describe_processing_job function."""
+        mock_client = MagicMock()
+        expected_response = {
+            'ProcessingJobName': 'test-processing-job',
+            'ProcessingJobStatus': 'Completed',
+        }
+        mock_client.describe_processing_job.return_value = expected_response
+        mock_get_sagemaker_client.return_value = mock_client
+
+        response = await describe_processing_job('test-processing-job')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.describe_processing_job.assert_called_once_with(
+            ProcessingJobName='test-processing-job'
+        )
+        assert response == expected_response
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_processing_jobs(self, mock_get_sagemaker_client):
+        """Test list_processing_jobs function."""
+        mock_client = MagicMock()
+        mock_client.list_processing_jobs.return_value = {
+            'ProcessingJobSummaries': [{'ProcessingJobName': 'test-processing-job'}]
+        }
+        mock_get_sagemaker_client.return_value = mock_client
+
+        jobs = await list_processing_jobs()
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.list_processing_jobs.assert_called_once()
+        assert jobs == [{'ProcessingJobName': 'test-processing-job'}]
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_stop_processing_job(self, mock_get_sagemaker_client):
+        """Test stop_processing_job function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        await stop_processing_job('test-processing-job')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.stop_processing_job.assert_called_once_with(
+            ProcessingJobName='test-processing-job'
+        )
