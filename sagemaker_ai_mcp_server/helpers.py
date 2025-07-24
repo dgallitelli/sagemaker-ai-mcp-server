@@ -200,3 +200,41 @@ async def stop_processing_job(processing_job_name: str) -> None:
     logger.info(f'Stopping SageMaker Processing Job: {processing_job_name}')
     client.stop_processing_job(ProcessingJobName=processing_job_name)
     logger.info(f'Processing Job {processing_job_name} stopped successfully.')
+
+
+async def list_transform_jobs() -> List[Dict[str, Any]]:
+    """List all SageMaker Transform Jobs.
+
+    Returns:
+        List[Dict[str, Any]]: A list of SageMaker Transform Jobs.
+    """
+    client = get_sagemaker_client()
+    logger.info('Listing SageMaker Transform Jobs...')
+    response = client.list_transform_jobs()
+    return response.get('TransformJobSummaries', [])
+
+
+async def describe_transform_job(transform_job_name: str) -> Dict[str, Any]:
+    """Describe a SageMaker Transform Job.
+
+    Args:
+        transform_job_name (str): The name of the SageMaker Transform Job to describe.
+
+    Returns:
+        Dict[str, Any]: The details of the SageMaker Transform Job.
+    """
+    client = get_sagemaker_client()
+    logger.info(f'Describing SageMaker Transform Job: {transform_job_name}')
+    response = client.describe_transform_job(TransformJobName=transform_job_name)
+    return response
+
+
+async def stop_transform_job(transform_job_name: str) -> None:
+    """Stop a SageMaker Transform Job.
+
+    Args:
+        transform_job_name (str): The name of the SageMaker Transform Job to stop.
+    """
+    client = get_sagemaker_client()
+    logger.info(f'Stopping SageMaker Transform Job: {transform_job_name}')
+    client.stop_transform_job(TransformJobName=transform_job_name)
