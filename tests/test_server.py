@@ -8,12 +8,15 @@ from sagemaker_ai_mcp_server.server import (
     describe_endpoint_sagemaker,
     describe_processing_job_sagemaker,
     describe_training_job_sagemaker,
+    describe_transform_job_sagemaker,
     list_endpoint_configs_sagemaker,
     list_endpoints_sagemaker,
     list_processing_jobs_sagemaker,
     list_training_jobs_sagemaker,
+    list_transform_jobs_sagemaker,
     stop_processing_job_sagemaker,
     stop_training_job_sagemaker,
+    stop_transform_job_sagemaker,
 )
 from unittest.mock import patch
 
@@ -199,4 +202,54 @@ async def test_stop_processing_job_sagemaker():
 
         mock_stop_processing.assert_called_once_with(job_name)
         expected_msg = f"Processing job '{job_name}' stopped successfully"
+        assert {'message': expected_msg} == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
+async def test_list_transform_jobs_sagemaker():
+    """Test the list_transform_jobs_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_transform_jobs') as mock_list_transform:
+        mock_list_transform.return_value = [
+            {'TransformJobName': 'test-transform-job-1'},
+            {'TransformJobName': 'test-transform-job-2'},
+        ]
+
+        result = await list_transform_jobs_sagemaker()
+
+        mock_list_transform.assert_called_once()
+        assert result == {
+            'transform_jobs': [
+                {'TransformJobName': 'test-transform-job-1'},
+                {'TransformJobName': 'test-transform-job-2'},
+            ]
+        }
+
+
+@pytest.mark.asyncio
+async def test_describe_transform_job_sagemaker():
+    """Test the describe_transform_job_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.describe_transform_job') as mock_describe_transform:
+        job_name = 'test-transform-job'
+        expected_result = {
+            'TransformJobName': job_name,
+            'TransformJobStatus': 'Completed',
+            'CreationTime': '2023-01-01T00:00:00',
+        }
+        mock_describe_transform.return_value = expected_result
+
+        result = await describe_transform_job_sagemaker(job_name)
+
+        mock_describe_transform.assert_called_once_with(job_name)
+        assert result == expected_result
+
+
+@pytest.mark.asyncio
+async def test_stop_transform_job_sagemaker():
+    """Test the stop_transform_job_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.stop_transform_job') as mock_stop_transform:
+        job_name = 'test-transform-job'
+        await stop_transform_job_sagemaker(job_name)
+
+        mock_stop_transform.assert_called_once_with(job_name)
+        expected_msg = f"Transform job '{job_name}' stopped successfully"
         assert {'message': expected_msg} == {'message': expected_msg}
