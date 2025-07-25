@@ -4,11 +4,14 @@ import os
 import pytest
 from sagemaker_ai_mcp_server.helpers import (
     create_mlflow_tracking_server,
+    create_presigned_domain_url,
     create_presigned_mlflow_tracking_server_url,
+    delete_domain,
     delete_endpoint,
     delete_endpoint_config,
     delete_mlflow_tracking_server,
     delete_pipeline,
+    describe_domain,
     describe_endpoint,
     describe_endpoint_config,
     describe_mlflow_tracking_server,
@@ -22,6 +25,7 @@ from sagemaker_ai_mcp_server.helpers import (
     get_region,
     get_sagemaker_client,
     get_sagemaker_execution_role_arn,
+    list_domains,
     list_endpoint_configs,
     list_endpoints,
     list_mlflow_tracking_servers,
@@ -55,6 +59,17 @@ class TestHelpers:
         """Test get_region with no AWS_REGION environment variable."""
         with patch.dict(os.environ, {}, clear=True):
             assert get_region() == 'us-east-1'
+
+    def test_get_sagemaker_execution_role_arn(self):
+        """Test get_sagemaker_execution_role_arn function."""
+        with patch.dict(
+            os.environ,
+            {
+                'SAGEMAKER_EXECUTION_ROLE_ARN': 'arn:aws:iam::123456789012:role/SageMakerExecutionRole'
+            },
+        ):
+            role_arn = get_sagemaker_execution_role_arn()
+            assert role_arn == 'arn:aws:iam::123456789012:role/SageMakerExecutionRole'
 
     @patch('sagemaker_ai_mcp_server.helpers.boto3.Session')
     def test_get_aws_session_with_profile(self, mock_session):
@@ -579,7 +594,6 @@ class TestHelpers:
         mock_client = MagicMock()
         mock_get_sagemaker_client.return_value = mock_client
 
-        # Create mock response
         mock_response = {
             'TrackingServerSummaries': [
                 {'TrackingServerName': 'test-mlflow-server', 'Status': 'InService'}
@@ -587,7 +601,6 @@ class TestHelpers:
         }
         mock_client.list_mlflow_tracking_servers.return_value = mock_response
 
-        # Call the function and verify the result
         servers = await list_mlflow_tracking_servers()
 
         mock_get_sagemaker_client.assert_called_once()
@@ -602,7 +615,6 @@ class TestHelpers:
         mock_client = MagicMock()
         mock_get_sagemaker_client.return_value = mock_client
 
-        # Create mock response
         expected_response = {
             'TrackingServerName': 'test-mlflow-server',
             'Status': 'InService',
@@ -610,7 +622,6 @@ class TestHelpers:
         }
         mock_client.describe_mlflow_tracking_server.return_value = expected_response
 
-        # Call the function and verify the result
         response = await describe_mlflow_tracking_server('test-mlflow-server')
 
         mock_get_sagemaker_client.assert_called_once()
@@ -626,11 +637,9 @@ class TestHelpers:
         mock_client = MagicMock()
         mock_get_sagemaker_client.return_value = mock_client
 
-        # Create mock response
         expected_response = {'TrackingServerName': 'test-mlflow-server', 'Status': 'Starting'}
         mock_client.start_mlflow_tracking_server.return_value = expected_response
 
-        # Call the function and verify the result
         response = await start_mlflow_tracking_server('test-mlflow-server')
 
         mock_get_sagemaker_client.assert_called_once()
@@ -646,11 +655,9 @@ class TestHelpers:
         mock_client = MagicMock()
         mock_get_sagemaker_client.return_value = mock_client
 
-        # Create mock response
         expected_response = {'TrackingServerName': 'test-mlflow-server', 'Status': 'Stopping'}
         mock_client.stop_mlflow_tracking_server.return_value = expected_response
 
-        # Call the function and verify the result
         response = await stop_mlflow_tracking_server('test-mlflow-server')
 
         mock_get_sagemaker_client.assert_called_once()
@@ -668,11 +675,9 @@ class TestHelpers:
         mock_client = MagicMock()
         mock_get_sagemaker_client.return_value = mock_client
 
-        # Create mock response
         expected_response = {'PresignedUrl': 'https://example.com/presigned-url'}
         mock_client.create_presigned_mlflow_tracking_server_url.return_value = expected_response
 
-        # Call function with default expiration
         url = await create_presigned_mlflow_tracking_server_url('test-mlflow-server')
 
         mock_get_sagemaker_client.assert_called_once()
@@ -690,11 +695,9 @@ class TestHelpers:
         mock_client = MagicMock()
         mock_get_sagemaker_client.return_value = mock_client
 
-        # Create mock response
         expected_response = {'PresignedUrl': 'https://example.com/presigned-url-custom'}
         mock_client.create_presigned_mlflow_tracking_server_url.return_value = expected_response
 
-        # Call function with custom expiration
         custom_expiration = 7200
         url = await create_presigned_mlflow_tracking_server_url(
             'test-mlflow-server', custom_expiration
@@ -705,3 +708,70 @@ class TestHelpers:
             TrackingServerName='test-mlflow-server', ExpirationSeconds=custom_expiration
         )
         assert url == 'https://example.com/presigned-url-custom'
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_delete_domain(self, mock_get_sagemaker_client):
+        """Test delete_domain function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        await delete_domain('test-domain')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.delete_domain.assert_called_once_with(DomainId='test-domain')
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_domains(self, mock_get_sagemaker_client):
+        """Test list_domains function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        mock_response = {'Domains': [{'DomainId': 'test-domain', 'DomainName': 'Test Domain'}]}
+        mock_client.list_domains.return_value = mock_response
+
+        domains = await list_domains()
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.list_domains.assert_called_once()
+        expected = [{'DomainId': 'test-domain', 'DomainName': 'Test Domain'}]
+        assert domains == expected
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_describe_domain(self, mock_get_sagemaker_client):
+        """Test describe_domain function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        expected_response = {
+            'DomainId': 'test-domain',
+            'DomainName': 'Test Domain',
+            'Status': 'InService',
+        }
+        mock_client.describe_domain.return_value = expected_response
+
+        response = await describe_domain('test-domain')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.describe_domain.assert_called_once_with(DomainId='test-domain')
+        assert response == expected_response
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_create_presigned_domain_url(self, mock_get_sagemaker_client):
+        """Test create_presigned_domain_url function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        expected_response = {'AuthorizedUrl': 'https://example.com/presigned-domain-url'}
+        mock_client.create_presigned_domain_url.return_value = expected_response
+
+        url = await create_presigned_domain_url('test-domain', 'test-profile-name')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.create_presigned_domain_url.assert_called_once_with(
+            DomainId='test-domain', UserProfileName='test-profile-name', ExpirationSeconds=3600
+        )
+        assert url == 'https://example.com/presigned-domain-url'
