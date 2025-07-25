@@ -4,11 +4,15 @@ from loguru import logger
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
 from sagemaker_ai_mcp_server.helpers import (
+    create_mlflow_tracking_server,
+    create_presigned_mlflow_tracking_server_url,
     delete_endpoint,
     delete_endpoint_config,
+    delete_mlflow_tracking_server,
     delete_pipeline,
     describe_endpoint,
     describe_endpoint_config,
+    describe_mlflow_tracking_server,
     describe_pipeline,
     describe_pipeline_definition_for_execution,
     describe_pipeline_execution,
@@ -17,6 +21,7 @@ from sagemaker_ai_mcp_server.helpers import (
     describe_transform_job,
     list_endpoint_configs,
     list_endpoints,
+    list_mlflow_tracking_servers,
     list_pipeline_execution_steps,
     list_pipeline_executions,
     list_pipeline_parameters_for_execution,
@@ -24,13 +29,15 @@ from sagemaker_ai_mcp_server.helpers import (
     list_processing_jobs,
     list_training_jobs,
     list_transform_jobs,
+    start_mlflow_tracking_server,
     start_pipeline_execution,
+    stop_mlflow_tracking_server,
     stop_pipeline_execution,
     stop_processing_job,
     stop_training_job,
     stop_transform_job,
 )
-from typing import Annotated, Any, Dict, List
+from typing import Annotated, Any, Dict, List, Literal
 
 
 mcp = FastMCP(
@@ -65,7 +72,14 @@ mcp = FastMCP(
     - Describe Pipeline Execution
     - Start Pipeline Execution
     - Stop Pipeline Execution
-       
+    - Create an Managed MLflow Tracking Server in SageMaker
+    - Delete an Managed MLflow Tracking Server in SageMaker
+    - List Managed MLflow Tracking Servers in SageMaker
+    - Describe an Managed MLflow Tracking Server in SageMaker
+    - Start an Managed MLflow Tracking Server in SageMaker
+    - Stop an Managed MLflow Tracking Server in SageMaker
+    - Create a presigned URL for an Managed MLflow Tracking Server in SageMaker
+
     Use these tools to manage your SageMaker resources effectively.
     """,
     dependencies=[
@@ -1035,6 +1049,304 @@ async def stop_pipeline_execution_sagemaker(
     except Exception as e:
         logger.error(f'Error stopping pipeline execution {pipeline_execution_arn}: {e}')
         raise ValueError(f'Failed to stop pipeline execution {pipeline_execution_arn}: {e}')
+
+
+@mcp.tool(
+    name='create_mlflow_tracking_server_sagemaker',
+    description='Create a Managed MLflow Tracking Server in SageMaker',
+)
+async def create_mlflow_tracking_server_sagemaker(
+    tracking_server_name: Annotated[
+        str, Field(description='The name of the MLflow Tracking Server to create')
+    ],
+    artifact_store_uri: Annotated[
+        str, Field(description='The S3 URI for the artifact store of the MLflow Tracking Server')
+    ],
+    tracking_server_size: Annotated[
+        Literal['Small', 'Medium', 'Large'],
+        Field(description='The size of the MLflow Tracking Server to create'),
+    ],
+) -> Dict[str, str]:
+    """Create a Managed MLflow Tracking Server in SageMaker.
+
+    ## Usage
+
+    Use this tool to create a managed MLflow Tracking Server in SageMaker by providing
+    the server name, artifact store URI, and server size. This is useful for setting up
+    a centralized tracking server for ML experiments.
+
+    ## Example
+
+    ```python
+    result = await create_mlflow_tracking_server_sagemaker(
+        tracking_server_name='my-tracking-server',
+        artifact_store_uri='s3://my-bucket/mlflow-artifacts',
+        tracking_server_size='Medium',
+    )
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await create_mlflow_tracking_server(
+            tracking_server_name, artifact_store_uri, tracking_server_size
+        )
+        return {'message': f"MLflow Tracking Server '{tracking_server_name}' created successfully"}
+    except Exception as e:
+        logger.error(f'Error creating MLflow Tracking Server {tracking_server_name}: {e}')
+        raise ValueError(f'Failed to create MLflow Tracking Server {tracking_server_name}: {e}')
+
+
+@mcp.tool(
+    name='delete_mlflow_tracking_server_sagemaker',
+    description='Delete a Managed MLflow Tracking Server in SageMaker',
+)
+async def delete_mlflow_tracking_server_sagemaker(
+    tracking_server_name: Annotated[
+        str, Field(description='The name of the MLflow Tracking Server to delete')
+    ],
+) -> Dict[str, str]:
+    """Delete a Managed MLflow Tracking Server in SageMaker.
+
+    ## Usage
+
+    Use this tool to delete a managed MLflow Tracking Server in SageMaker by providing
+    the server name. This is useful for cleaning up resources that are no longer needed.
+
+    ## Example
+
+    ```python
+    result = await delete_mlflow_tracking_server_sagemaker(
+        tracking_server_name='my-tracking-server'
+    )
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await delete_mlflow_tracking_server(tracking_server_name)
+        return {'message': f"MLflow Tracking Server '{tracking_server_name}' deleted successfully"}
+    except Exception as e:
+        logger.error(f'Error deleting MLflow Tracking Server {tracking_server_name}: {e}')
+        raise ValueError(f'Failed to delete MLflow Tracking Server {tracking_server_name}: {e}')
+
+
+@mcp.tool(
+    name='list_mlflow_tracking_servers_sagemaker',
+    description='List all Managed MLflow Tracking Servers in SageMaker',
+)
+async def list_mlflow_tracking_servers_sagemaker() -> Dict[str, List]:
+    """List all Managed MLflow Tracking Servers in SageMaker.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all managed MLflow Tracking Servers in your
+    SageMaker account. This is useful for seeing what tracking servers are available.
+
+    ## Example
+
+    ```python
+    servers = await list_mlflow_tracking_servers_sagemaker()
+    print(servers)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'tracking_servers': A list of dictionaries, each representing a managed MLflow Tracking Server.
+
+    ## Returns
+    A dictionary containing a list of MLflow Tracking Servers.
+    """
+    try:
+        servers = await list_mlflow_tracking_servers()
+        return {'tracking_servers': servers}
+    except Exception as e:
+        logger.error(f'Error listing MLflow Tracking Servers: {e}')
+        raise ValueError(f'Failed to list MLflow Tracking Servers: {e}')
+
+
+@mcp.tool(
+    name='describe_mlflow_tracking_server_sagemaker',
+    description='Describe a Managed MLflow Tracking Server in SageMaker',
+)
+async def describe_mlflow_tracking_server_sagemaker(
+    tracking_server_name: Annotated[
+        str, Field(description='The name of the MLflow Tracking Server to describe')
+    ],
+) -> Dict[str, Any]:
+    """Describe a specified Managed MLflow Tracking Server in SageMaker.
+
+    ## Usage
+
+    Use this tool to get detailed information about a managed MLflow Tracking Server
+    by providing its name. This returns comprehensive information about the server's
+    configuration, status, and other details.
+
+    ## Example
+
+    ```python
+    server_details = await describe_mlflow_tracking_server_sagemaker(
+        tracking_server_name='my-tracking-server'
+    )
+    print(server_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the MLflow Tracking Server.
+
+    ## Returns
+    A dictionary containing the tracking server details.
+    """
+    try:
+        server_details = await describe_mlflow_tracking_server(tracking_server_name)
+        return {'tracking_server_details': server_details}
+    except Exception as e:
+        logger.error(f'Error describing MLflow Tracking Server {tracking_server_name}: {e}')
+        raise ValueError(f'Failed to describe MLflow Tracking Server {tracking_server_name}: {e}')
+
+
+@mcp.tool(
+    name='create_presigned_url_for_mlflow_tracking_server_sagemaker',
+    description='Create a presigned URL for a Managed MLflow Tracking Server in SageMaker',
+)
+async def create_presigned_url_for_mlflow_tracking_server_sagemaker(
+    tracking_server_name: Annotated[
+        str,
+        Field(description='The name of the MLflow Tracking Server to create a presigned URL for'),
+    ],
+    expiration_seconds: Annotated[
+        int, Field(description='The number of seconds the presigned URL should be valid for')
+    ],
+) -> Dict[str, str]:
+    """Create a presigned URL for a Managed MLflow Tracking Server in SageMaker.
+
+    ## Usage
+
+    Use this tool to create a presigned URL for accessing a managed MLflow Tracking Server
+    by providing the server name and expiration time. This is useful for securely sharing
+    access to the tracking server.
+
+    ## Example
+
+    ```python
+    url = await create_presigned_url_for_mlflow_tracking_server_sagemaker(
+        tracking_server_name='my-tracking-server', expiration_seconds=3600
+    )
+    print(url)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'presigned_url': The generated presigned URL for the MLflow Tracking Server.
+
+    ## Returns
+    A dictionary containing the presigned URL.
+    """
+    try:
+        presigned_url = await create_presigned_mlflow_tracking_server_url(
+            tracking_server_name, expiration_seconds
+        )
+        return {'presigned_url': presigned_url}
+    except Exception as e:
+        logger.error(
+            f'Error creating presigned URL for MLflow Tracking Server {tracking_server_name}: {e}'
+        )
+        raise ValueError(
+            f'Failed to create presigned URL for MLflow Tracking Server {tracking_server_name}: {e}'
+        )
+
+
+@mcp.tool(
+    name='start_mlflow_tracking_server_sagemaker',
+    description='Start a Managed MLflow Tracking Server in SageMaker',
+)
+async def start_mlflow_tracking_server_sagemaker(
+    tracking_server_name: Annotated[
+        str, Field(description='The name of the MLflow Tracking Server to start')
+    ],
+) -> Dict[str, str]:
+    """Start a Managed MLflow Tracking Server in SageMaker.
+
+    ## Usage
+
+    Use this tool to start a managed MLflow Tracking Server in SageMaker by providing
+    the server name. This is useful for activating a tracking server that has been created.
+
+    ## Example
+
+    ```python
+    result = await start_mlflow_tracking_server_sagemaker(
+        tracking_server_name='my-tracking-server'
+    )
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await start_mlflow_tracking_server(tracking_server_name)
+        return {'message': f"MLflow Tracking Server '{tracking_server_name}' started successfully"}
+    except Exception as e:
+        logger.error(f'Error starting MLflow Tracking Server {tracking_server_name}: {e}')
+        raise ValueError(f'Failed to start MLflow Tracking Server {tracking_server_name}: {e}')
+
+
+@mcp.tool(
+    name='stop_mlflow_tracking_server_sagemaker',
+    description='Stop a Managed MLflow Tracking Server in SageMaker',
+)
+async def stop_mlflow_tracking_server_sagemaker(
+    tracking_server_name: Annotated[
+        str, Field(description='The name of the MLflow Tracking Server to stop')
+    ],
+) -> Dict[str, str]:
+    """Stop a Managed MLflow Tracking Server in SageMaker.
+
+    ## Usage
+
+    Use this tool to stop a managed MLflow Tracking Server in SageMaker by providing
+    the server name. This is useful for deactivating a tracking server that is no longer needed.
+
+    ## Example
+
+    ```python
+    result = await stop_mlflow_tracking_server_sagemaker(tracking_server_name='my-tracking-server')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await stop_mlflow_tracking_server(tracking_server_name)
+        return {'message': f"MLflow Tracking Server '{tracking_server_name}' stopped successfully"}
+    except Exception as e:
+        logger.error(f'Error stopping MLflow Tracking Server {tracking_server_name}: {e}')
+        raise ValueError(f'Failed to stop MLflow Tracking Server {tracking_server_name}: {e}')
 
 
 def main():

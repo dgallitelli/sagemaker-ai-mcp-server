@@ -3,11 +3,15 @@
 import os
 import pytest
 from sagemaker_ai_mcp_server.helpers import (
+    create_mlflow_tracking_server,
+    create_presigned_mlflow_tracking_server_url,
     delete_endpoint,
     delete_endpoint_config,
+    delete_mlflow_tracking_server,
     delete_pipeline,
     describe_endpoint,
     describe_endpoint_config,
+    describe_mlflow_tracking_server,
     describe_pipeline,
     describe_pipeline_definition_for_execution,
     describe_pipeline_execution,
@@ -17,8 +21,10 @@ from sagemaker_ai_mcp_server.helpers import (
     get_aws_session,
     get_region,
     get_sagemaker_client,
+    get_sagemaker_execution_role_arn,
     list_endpoint_configs,
     list_endpoints,
+    list_mlflow_tracking_servers,
     list_pipeline_execution_steps,
     list_pipeline_executions,
     list_pipeline_parameters_for_execution,
@@ -26,7 +32,9 @@ from sagemaker_ai_mcp_server.helpers import (
     list_processing_jobs,
     list_training_jobs,
     list_transform_jobs,
+    start_mlflow_tracking_server,
     start_pipeline_execution,
+    stop_mlflow_tracking_server,
     stop_pipeline_execution,
     stop_processing_job,
     stop_training_job,
@@ -461,19 +469,15 @@ class TestHelpers:
             PipelineExecutionArn='test-execution'
         )
         assert response == expected_response
-        
+
     @pytest.mark.asyncio
     @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
-    async def test_start_pipeline_execution_without_parameters(
-        self, mock_get_sagemaker_client
-    ):
+    async def test_start_pipeline_execution_without_parameters(self, mock_get_sagemaker_client):
         """Test start_pipeline_execution function without parameters."""
         mock_client = MagicMock()
         pipeline_arn = 'arn:aws:sagemaker:us-west-2:123456789012:'
         pipeline_path = 'pipeline/test-pipeline/execution/test-execution'
-        expected_response = {
-            'PipelineExecutionArn': pipeline_arn + pipeline_path
-        }
+        expected_response = {'PipelineExecutionArn': pipeline_arn + pipeline_path}
         mock_client.start_pipeline_execution.return_value = expected_response
         mock_get_sagemaker_client.return_value = mock_client
 
@@ -488,27 +492,21 @@ class TestHelpers:
 
     @pytest.mark.asyncio
     @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
-    async def test_start_pipeline_execution_with_parameters(
-        self, mock_get_sagemaker_client
-    ):
+    async def test_start_pipeline_execution_with_parameters(self, mock_get_sagemaker_client):
         """Test start_pipeline_execution function with pipeline parameters."""
         mock_client = MagicMock()
         pipeline_arn = 'arn:aws:sagemaker:us-west-2:123456789012:'
         pipeline_path = 'pipeline/test-pipeline/execution/test-execution'
-        expected_response = {
-            'PipelineExecutionArn': pipeline_arn + pipeline_path
-        }
+        expected_response = {'PipelineExecutionArn': pipeline_arn + pipeline_path}
         mock_client.start_pipeline_execution.return_value = expected_response
         mock_get_sagemaker_client.return_value = mock_client
 
         pipeline_parameters = [
             {'Name': 'param1', 'Value': 'value1'},
-            {'Name': 'param2', 'Value': 'value2'}
+            {'Name': 'param2', 'Value': 'value2'},
         ]
 
-        response = await start_pipeline_execution(
-            'test-pipeline', pipeline_parameters
-        )
+        response = await start_pipeline_execution('test-pipeline', pipeline_parameters)
 
         mock_get_sagemaker_client.assert_called_once()
         mock_client.start_pipeline_execution.assert_called_once_with(
@@ -534,3 +532,176 @@ class TestHelpers:
         mock_client.stop_pipeline_execution.assert_called_once_with(
             PipelineExecutionArn=execution_arn
         )
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_execution_role_arn')
+    async def test_create_mlflow_tracking_server(
+        self, mock_get_role_arn, mock_get_sagemaker_client
+    ):
+        """Test create_mlflow_tracking_server function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+        role_arn = 'arn:aws:iam::123456789012:role/AmazonSageMaker-ExecutionRole'
+        mock_get_role_arn.return_value = role_arn
+
+        await create_mlflow_tracking_server(
+            'test-mlflow-server', 's3://bucket/artifacts', 'Medium'
+        )
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_get_role_arn.assert_called_once()
+        mock_client.create_mlflow_tracking_server.assert_called_once_with(
+            TrackingServerName='test-mlflow-server',
+            ArtifactStoreUri='s3://bucket/artifacts',
+            TrackingServerSize='Medium',
+            RoleArn=role_arn,
+        )
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_delete_mlflow_tracking_server(self, mock_get_sagemaker_client):
+        """Test delete_mlflow_tracking_server function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        await delete_mlflow_tracking_server('test-mlflow-server')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.delete_mlflow_tracking_server.assert_called_once_with(
+            TrackingServerName='test-mlflow-server'
+        )
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_mlflow_tracking_servers(self, mock_get_sagemaker_client):
+        """Test list_mlflow_tracking_servers function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        # Create mock response
+        mock_response = {
+            'TrackingServerSummaries': [
+                {'TrackingServerName': 'test-mlflow-server', 'Status': 'InService'}
+            ]
+        }
+        mock_client.list_mlflow_tracking_servers.return_value = mock_response
+
+        # Call the function and verify the result
+        servers = await list_mlflow_tracking_servers()
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.list_mlflow_tracking_servers.assert_called_once()
+        expected = [{'TrackingServerName': 'test-mlflow-server', 'Status': 'InService'}]
+        assert servers == expected
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_describe_mlflow_tracking_server(self, mock_get_sagemaker_client):
+        """Test describe_mlflow_tracking_server function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        # Create mock response
+        expected_response = {
+            'TrackingServerName': 'test-mlflow-server',
+            'Status': 'InService',
+            'CreationTime': '2023-01-01T00:00:00Z',
+        }
+        mock_client.describe_mlflow_tracking_server.return_value = expected_response
+
+        # Call the function and verify the result
+        response = await describe_mlflow_tracking_server('test-mlflow-server')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.describe_mlflow_tracking_server.assert_called_once_with(
+            TrackingServerName='test-mlflow-server'
+        )
+        assert response == expected_response
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_start_mlflow_tracking_server(self, mock_get_sagemaker_client):
+        """Test start_mlflow_tracking_server function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        # Create mock response
+        expected_response = {'TrackingServerName': 'test-mlflow-server', 'Status': 'Starting'}
+        mock_client.start_mlflow_tracking_server.return_value = expected_response
+
+        # Call the function and verify the result
+        response = await start_mlflow_tracking_server('test-mlflow-server')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.start_mlflow_tracking_server.assert_called_once_with(
+            TrackingServerName='test-mlflow-server'
+        )
+        assert response == expected_response
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_stop_mlflow_tracking_server(self, mock_get_sagemaker_client):
+        """Test stop_mlflow_tracking_server function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        # Create mock response
+        expected_response = {'TrackingServerName': 'test-mlflow-server', 'Status': 'Stopping'}
+        mock_client.stop_mlflow_tracking_server.return_value = expected_response
+
+        # Call the function and verify the result
+        response = await stop_mlflow_tracking_server('test-mlflow-server')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.stop_mlflow_tracking_server.assert_called_once_with(
+            TrackingServerName='test-mlflow-server'
+        )
+        assert response == expected_response
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_create_presigned_mlflow_tracking_server_url_default(
+        self, mock_get_sagemaker_client
+    ):
+        """Test create_presigned_mlflow_tracking_server_url with default expiration."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        # Create mock response
+        expected_response = {'PresignedUrl': 'https://example.com/presigned-url'}
+        mock_client.create_presigned_mlflow_tracking_server_url.return_value = expected_response
+
+        # Call function with default expiration
+        url = await create_presigned_mlflow_tracking_server_url('test-mlflow-server')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.create_presigned_mlflow_tracking_server_url.assert_called_once_with(
+            TrackingServerName='test-mlflow-server', ExpirationSeconds=3600
+        )
+        assert url == 'https://example.com/presigned-url'
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_create_presigned_mlflow_tracking_server_url_custom(
+        self, mock_get_sagemaker_client
+    ):
+        """Test create_presigned_mlflow_tracking_server_url with custom expiration."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        # Create mock response
+        expected_response = {'PresignedUrl': 'https://example.com/presigned-url-custom'}
+        mock_client.create_presigned_mlflow_tracking_server_url.return_value = expected_response
+
+        # Call function with custom expiration
+        custom_expiration = 7200
+        url = await create_presigned_mlflow_tracking_server_url(
+            'test-mlflow-server', custom_expiration
+        )
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.create_presigned_mlflow_tracking_server_url.assert_called_once_with(
+            TrackingServerName='test-mlflow-server', ExpirationSeconds=custom_expiration
+        )
+        assert url == 'https://example.com/presigned-url-custom'
