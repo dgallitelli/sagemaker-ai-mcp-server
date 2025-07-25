@@ -595,3 +595,66 @@ async def create_presigned_domain_url(
         ExpirationSeconds=expiration_seconds,
     )
     return response.get('AuthorizedUrl', '')
+
+
+async def list_user_profiles() -> List[Dict[str, Any]]:
+    """List all user profiles in a SageMaker Domain.
+
+    Returns:
+        List[Dict[str, Any]]: A list of user profiles in the SageMaker Domain.
+    """
+    client = get_sagemaker_client()
+    logger.info('Listing SageMaker User Profiles...')
+    response = client.list_user_profiles()
+    return response.get('UserProfiles', [])
+
+
+async def list_spaces() -> List[Dict[str, Any]]:
+    """List all SageMaker Spaces.
+
+    Returns:
+        List[Dict[str, Any]]: A list of SageMaker Spaces.
+    """
+    client = get_sagemaker_client()
+    logger.info('Listing SageMaker Spaces...')
+    response = client.list_spaces()
+    return response.get('Spaces', [])
+
+
+async def describe_model(model_name: str) -> Dict[str, Any]:
+    """Describe a SageMaker Model.
+
+    Args:
+        model_name (str): The name of the SageMaker Model to describe.
+
+    Returns:
+        Dict[str, Any]: The details of the SageMaker Model.
+    """
+    client = get_sagemaker_client()
+    logger.info(f'Describing SageMaker Model: {model_name}')
+    response = client.describe_model(ModelName=model_name)
+    return response
+
+
+async def delete_model(model_name: str) -> None:
+    """Delete a SageMaker Model.
+
+    Args:
+        model_name (str): The name of the SageMaker Model to delete.
+    """
+    client = get_sagemaker_client()
+    logger.info(f'Deleting SageMaker Model: {model_name}')
+    client.delete_model(ModelName=model_name)
+    logger.info(f'Model {model_name} deleted successfully.')
+
+
+async def list_models() -> List[Dict[str, Any]]:
+    """List all SageMaker Models.
+
+    Returns:
+        List[Dict[str, Any]]: A list of SageMaker Models.
+    """
+    client = get_sagemaker_client()
+    logger.info('Listing SageMaker Models...')
+    response = client.list_models()
+    return response.get('Models', [])

@@ -10,11 +10,13 @@ from sagemaker_ai_mcp_server.helpers import (
     delete_endpoint,
     delete_endpoint_config,
     delete_mlflow_tracking_server,
+    delete_model,
     delete_pipeline,
     describe_domain,
     describe_endpoint,
     describe_endpoint_config,
     describe_mlflow_tracking_server,
+    describe_model,
     describe_pipeline,
     describe_pipeline_definition_for_execution,
     describe_pipeline_execution,
@@ -29,13 +31,16 @@ from sagemaker_ai_mcp_server.helpers import (
     list_endpoint_configs,
     list_endpoints,
     list_mlflow_tracking_servers,
+    list_models,
     list_pipeline_execution_steps,
     list_pipeline_executions,
     list_pipeline_parameters_for_execution,
     list_pipelines,
     list_processing_jobs,
+    list_spaces,
     list_training_jobs,
     list_transform_jobs,
+    list_user_profiles,
     start_mlflow_tracking_server,
     start_pipeline_execution,
     stop_mlflow_tracking_server,
@@ -775,3 +780,92 @@ class TestHelpers:
             DomainId='test-domain', UserProfileName='test-profile-name', ExpirationSeconds=3600
         )
         assert url == 'https://example.com/presigned-domain-url'
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_spaces(self, mock_get_sagemaker_client):
+        """Test list_spaces function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        mock_response = {'Spaces': [{'SpaceName': 'test-space', 'SpaceId': 'space-id-123'}]}
+        mock_client.list_spaces.return_value = mock_response
+
+        spaces = await list_spaces()
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.list_spaces.assert_called_once()
+        expected = [{'SpaceName': 'test-space', 'SpaceId': 'space-id-123'}]
+        assert spaces == expected
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_user_profiles(self, mock_get_sagemaker_client):
+        """Test list_user_profiles function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        mock_response = {
+            'UserProfiles': [{'UserProfileName': 'test-user', 'UserProfileArn': 'arn:aws:...'}]
+        }
+        mock_client.list_user_profiles.return_value = mock_response
+
+        profiles = await list_user_profiles()
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.list_user_profiles.assert_called_once()
+        expected = [{'UserProfileName': 'test-user', 'UserProfileArn': 'arn:aws:...'}]
+        assert profiles == expected
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_describe_model(self, mock_get_sagemaker_client):
+        """Test describe_model function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        expected_response = {
+            'ModelName': 'test-model',
+            'PrimaryContainer': {
+                'Image': '123456789012.dkr.ecr.us-west-2.amazonaws.com/test-image:latest'
+            },
+            'ExecutionRoleArn': 'arn:aws:iam::123456789012:role/SageMakerExecutionRole',
+        }
+        mock_client.describe_model.return_value = expected_response
+
+        response = await describe_model('test-model')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.describe_model.assert_called_once_with(ModelName='test-model')
+        assert response == expected_response
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_models(self, mock_get_sagemaker_client):
+        """Test list_models function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        mock_response = {
+            'Models': [{'ModelName': 'test-model', 'CreationTime': '2023-01-01T00:00:00Z'}]
+        }
+        mock_client.list_models.return_value = mock_response
+
+        models = await list_models()
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.list_models.assert_called_once()
+        expected = [{'ModelName': 'test-model', 'CreationTime': '2023-01-01T00:00:00Z'}]
+        assert models == expected
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_delete_model(self, mock_get_sagemaker_client):
+        """Test delete_model function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        await delete_model('test-model')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.delete_model.assert_called_once_with(ModelName='test-model')

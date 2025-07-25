@@ -9,11 +9,13 @@ from sagemaker_ai_mcp_server.server import (
     delete_endpoint_config_sagemaker,
     delete_endpoint_sagemaker,
     delete_mlflow_tracking_server_sagemaker,
+    delete_model_sagemaker,
     delete_pipeline_sagemaker,
     describe_domain_sagemaker,
     describe_endpoint_config_sagemaker,
     describe_endpoint_sagemaker,
     describe_mlflow_tracking_server_sagemaker,
+    describe_model_sagemaker,
     describe_pipeline_definition_for_execution_sagemaker,
     describe_pipeline_execution_sagemaker,
     describe_pipeline_sagemaker,
@@ -24,13 +26,16 @@ from sagemaker_ai_mcp_server.server import (
     list_endpoint_configs_sagemaker,
     list_endpoints_sagemaker,
     list_mlflow_tracking_servers_sagemaker,
+    list_models_sagemaker,
     list_pipeline_execution_steps_sagemaker,
     list_pipeline_executions_sagemaker,
     list_pipeline_parameters_for_execution_sagemaker,
     list_pipelines_sagemaker,
     list_processing_jobs_sagemaker,
+    list_spaces_sagemaker,
     list_training_jobs_sagemaker,
     list_transform_jobs_sagemaker,
+    list_user_profiles_sagemaker,
     start_mlflow_tracking_server_sagemaker,
     stop_mlflow_tracking_server_sagemaker,
     stop_processing_job_sagemaker,
@@ -613,3 +618,77 @@ async def test_create_presigned_url_for_domain_sagemaker():
 
         mock_create_url.assert_called_once_with(domain_id, user_profile_name, expiration)
         assert result == {'presigned_url': url}
+
+
+@pytest.mark.asyncio
+async def test_list_spaces_sagemaker():
+    """Test the list_spaces_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_spaces') as mock_list_spaces:
+        mock_list_spaces.return_value = [{'SpaceName': 'test-space'}]
+
+        result = await list_spaces_sagemaker()
+
+        mock_list_spaces.assert_called_once()
+        assert result == {'spaces': [{'SpaceName': 'test-space'}]}
+
+
+@pytest.mark.asyncio
+async def test_list_user_profiles_sagemaker():
+    """Test the list_user_profiles_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_user_profiles') as mock_list_user_profiles:
+        mock_list_user_profiles.return_value = [{'UserProfileName': 'test-user-profile'}]
+
+        result = await list_user_profiles_sagemaker()
+
+        mock_list_user_profiles.assert_called_once()
+        assert result == {'user_profiles': [{'UserProfileName': 'test-user-profile'}]}
+
+
+@pytest.mark.asyncio
+async def test_describe_model_sagemaker():
+    """Test the describe_model_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.describe_model') as mock_describe_model:
+        model_name = 'test-model'
+        expected_result = {
+            'ModelName': model_name,
+            'ModelArn': f'arn:aws:sagemaker:us-west-2:123456789012:model/{model_name}',
+            'CreationTime': '2023-01-01T00:00:00',
+        }
+        mock_describe_model.return_value = expected_result
+
+        result = await describe_model_sagemaker(model_name)
+
+        mock_describe_model.assert_called_once_with(model_name)
+        assert result == {'model_details': expected_result}
+
+
+@pytest.mark.asyncio
+async def test_delete_model_sagemaker():
+    """Test the delete_model_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.delete_model') as mock_delete_model:
+        model_name = 'test-model'
+        await delete_model_sagemaker(model_name)
+
+        mock_delete_model.assert_called_once_with(model_name)
+        expected_msg = f"Model '{model_name}' deleted successfully"
+        assert {'message': expected_msg} == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
+async def test_list_models_sagemaker():
+    """Test the list_models_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_models') as mock_list_models:
+        mock_list_models.return_value = [
+            {'ModelName': 'test-model-1'},
+            {'ModelName': 'test-model-2'},
+        ]
+
+        result = await list_models_sagemaker()
+
+        mock_list_models.assert_called_once()
+        assert result == {
+            'models': [
+                {'ModelName': 'test-model-1'},
+                {'ModelName': 'test-model-2'},
+            ]
+        }

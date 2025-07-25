@@ -11,11 +11,13 @@ from sagemaker_ai_mcp_server.helpers import (
     delete_endpoint,
     delete_endpoint_config,
     delete_mlflow_tracking_server,
+    delete_model,
     delete_pipeline,
     describe_domain,
     describe_endpoint,
     describe_endpoint_config,
     describe_mlflow_tracking_server,
+    describe_model,
     describe_pipeline,
     describe_pipeline_definition_for_execution,
     describe_pipeline_execution,
@@ -26,13 +28,16 @@ from sagemaker_ai_mcp_server.helpers import (
     list_endpoint_configs,
     list_endpoints,
     list_mlflow_tracking_servers,
+    list_models,
     list_pipeline_execution_steps,
     list_pipeline_executions,
     list_pipeline_parameters_for_execution,
     list_pipelines,
     list_processing_jobs,
+    list_spaces,
     list_training_jobs,
     list_transform_jobs,
+    list_user_profiles,
     start_mlflow_tracking_server,
     start_pipeline_execution,
     stop_mlflow_tracking_server,
@@ -49,7 +54,6 @@ mcp = FastMCP(
     instructions="""
     SageMaker AI MCP Server provides tools to interact with Amazon SageMaker AI
     service.
-    
     The server enables you to:
     - List SageMaker Endpoints
     - List SageMaker Endpoint Configurations
@@ -87,7 +91,11 @@ mcp = FastMCP(
     - List SageMaker Domains
     - Describe a SageMaker Domain
     - Create a presigned URL for a SageMaker Domain
-    
+    - List SageMaker Spaces
+    - List SageMaker User Profiles
+    - Describe a Model in SageMaker
+    - List Models in SageMaker
+    - Delete a Model in SageMaker
     Use these tools to manage your SageMaker resources effectively.
     """,
     dependencies=[
@@ -1502,9 +1510,171 @@ async def create_presigned_url_for_domain_sagemaker(
         raise ValueError(f'Failed to create presigned URL for domain {domain_id}: {e}')
 
 
+@mcp.tool(name='list_spaces_sagemaker', description='List all SageMaker Spaces')
+async def list_spaces_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Spaces.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Spaces in your account in the current region.
+    This is typically used to see what spaces are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    spaces = await list_spaces_sagemaker()
+    print(spaces)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'spaces': A list of dictionaries, each representing a SageMaker Space with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Spaces.
+    """
+    try:
+        spaces = await list_spaces()
+        return {'spaces': spaces}
+    except Exception as e:
+        logger.error(f'Error listing spaces: {e}')
+        raise ValueError(f'Failed to list spaces: {e}')
+
+
+@mcp.tool(name='list_user_profiles_sagemaker', description='List all SageMaker User Profiles')
+async def list_user_profiles_sagemaker() -> Dict[str, List]:
+    """List all SageMaker User Profiles.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker User Profiles in your account in the current region.
+    This is typically used to see what user profiles are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    user_profiles = await list_user_profiles_sagemaker()
+    print(user_profiles)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'user_profiles': A list of dictionaries, each representing a SageMaker User Profile with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker User Profiles.
+    """
+    try:
+        user_profiles = await list_user_profiles()
+        return {'user_profiles': user_profiles}
+    except Exception as e:
+        logger.error(f'Error listing user profiles: {e}')
+        raise ValueError(f'Failed to list user profiles: {e}')
+
+
+@mcp.tool(name='describe_model_sagemaker', description='Describe a SageMaker Model')
+async def describe_model_sagemaker(
+    model_name: Annotated[str, Field(description='The name of the SageMaker Model to describe')],
+) -> Dict[str, Any]:
+    """Describe a specified SageMaker Model.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker Model by providing its name.
+    This returns comprehensive information about the model's configuration, status, and other details.
+
+    ## Example
+
+    ```python
+    model_details = await describe_model_sagemaker(model_name='my-model')
+    print(model_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker Model.
+
+    ## Returns
+    A dictionary containing the model details.
+    """
+    try:
+        model_details = await describe_model(model_name)
+        return {'model_details': model_details}
+    except Exception as e:
+        logger.error(f'Error describing model {model_name}: {e}')
+        raise ValueError(f'Failed to describe model {model_name}: {e}')
+
+
+@mcp.tool(name='list_models_sagemaker', description='List all SageMaker Models')
+async def list_models_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Models.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Models in your account in the current region.
+    This is typically used to see what models are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    models = await list_models_sagemaker()
+    print(models)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'models': A list of dictionaries, each representing a SageMaker Model with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Models.
+    """
+    try:
+        models = await list_models()
+        return {'models': models}
+    except Exception as e:
+        logger.error(f'Error listing models: {e}')
+        raise ValueError(f'Failed to list models: {e}')
+
+
+@mcp.tool(name='delete_model_sagemaker', description='Delete a SageMaker Model')
+async def delete_model_sagemaker(
+    model_name: Annotated[str, Field(description='The name of the SageMaker Model to delete')],
+) -> Dict[str, str]:
+    """Delete a specified SageMaker Model.
+
+    ## Usage
+
+    Use this tool to delete a SageMaker Model by providing its name. This is useful for cleaning up
+    models that are no longer needed.
+
+    ## Example
+
+    ```python
+    result = await delete_model_sagemaker(model_name='my-model')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await delete_model(model_name)
+        return {'message': f"Model '{model_name}' deleted successfully"}
+    except Exception as e:
+        logger.error(f'Error deleting model {model_name}: {e}')
+        raise ValueError(f'Failed to delete model {model_name}: {e}')
+
+
 def main():
     """Run the SageMaker AI MCP Server."""
-    logger.info('Starting SageMaker AI MCP Server...')
+    logger.info('Welcome to the SageMaker AI MCP Server!')
     mcp.run()
 
 
