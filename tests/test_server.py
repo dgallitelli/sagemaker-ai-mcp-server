@@ -3,11 +3,14 @@
 import pytest
 from sagemaker_ai_mcp_server.server import (
     create_mlflow_tracking_server_sagemaker,
+    create_presigned_url_for_domain_sagemaker,
     create_presigned_url_for_mlflow_tracking_server_sagemaker,
+    delete_domain_sagemaker,
     delete_endpoint_config_sagemaker,
     delete_endpoint_sagemaker,
     delete_mlflow_tracking_server_sagemaker,
     delete_pipeline_sagemaker,
+    describe_domain_sagemaker,
     describe_endpoint_config_sagemaker,
     describe_endpoint_sagemaker,
     describe_mlflow_tracking_server_sagemaker,
@@ -17,6 +20,7 @@ from sagemaker_ai_mcp_server.server import (
     describe_processing_job_sagemaker,
     describe_training_job_sagemaker,
     describe_transform_job_sagemaker,
+    list_domains_sagemaker,
     list_endpoint_configs_sagemaker,
     list_endpoints_sagemaker,
     list_mlflow_tracking_servers_sagemaker,
@@ -511,8 +515,7 @@ async def test_describe_mlflow_tracking_server_sagemaker():
 async def test_create_presigned_url_for_mlflow_tracking_server_sagemaker():
     """Test the create_presigned_url function for MLflow tracking server."""
     with patch(
-        'sagemaker_ai_mcp_server.server.'
-        'create_presigned_mlflow_tracking_server_url'
+        'sagemaker_ai_mcp_server.server.create_presigned_mlflow_tracking_server_url'
     ) as mock_create_url:
         server_name = 'test-mlflow-server'
         expiration = 3600
@@ -520,10 +523,7 @@ async def test_create_presigned_url_for_mlflow_tracking_server_sagemaker():
         mock_create_url.return_value = url
 
         func = create_presigned_url_for_mlflow_tracking_server_sagemaker
-        result = await func(
-            tracking_server_name=server_name,
-            expiration_seconds=expiration
-        )
+        result = await func(tracking_server_name=server_name, expiration_seconds=expiration)
 
         mock_create_url.assert_called_once_with(server_name, expiration)
         assert result == {'presigned_url': url}
@@ -532,9 +532,7 @@ async def test_create_presigned_url_for_mlflow_tracking_server_sagemaker():
 @pytest.mark.asyncio
 async def test_start_mlflow_tracking_server_sagemaker():
     """Test the start_mlflow_tracking_server_sagemaker function."""
-    with patch(
-        'sagemaker_ai_mcp_server.server.start_mlflow_tracking_server'
-    ) as mock_start_server:
+    with patch('sagemaker_ai_mcp_server.server.start_mlflow_tracking_server') as mock_start_server:
         server_name = 'test-mlflow-server'
         msg = f"MLflow Tracking Server '{server_name}' started successfully"
 
@@ -547,9 +545,7 @@ async def test_start_mlflow_tracking_server_sagemaker():
 @pytest.mark.asyncio
 async def test_stop_mlflow_tracking_server_sagemaker():
     """Test the stop_mlflow_tracking_server_sagemaker function."""
-    with patch(
-        'sagemaker_ai_mcp_server.server.stop_mlflow_tracking_server'
-    ) as mock_stop_server:
+    with patch('sagemaker_ai_mcp_server.server.stop_mlflow_tracking_server') as mock_stop_server:
         server_name = 'test-mlflow-server'
         msg = f"MLflow Tracking Server '{server_name}' stopped successfully"
 
@@ -557,3 +553,63 @@ async def test_stop_mlflow_tracking_server_sagemaker():
 
         mock_stop_server.assert_called_once_with(server_name)
         assert result == {'message': msg}
+
+
+@pytest.mark.asyncio
+async def test_delete_domain_sagemaker():
+    """Test the delete_domain_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.delete_domain') as mock_delete_domain:
+        domain_id = 'test-domain'
+        await delete_domain_sagemaker(domain_id)
+
+        mock_delete_domain.assert_called_once_with(domain_id)
+        expected_msg = f"Domain '{domain_id}' deleted successfully"
+        assert {'message': expected_msg} == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
+async def test_list_domains_sagemaker():
+    """Test the list_domains_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_domains') as mock_list_domains:
+        mock_list_domains.return_value = [{'DomainId': 'test-domain'}]
+
+        result = await list_domains_sagemaker()
+
+        mock_list_domains.assert_called_once()
+        assert result == {'domains': [{'DomainId': 'test-domain'}]}
+
+
+@pytest.mark.asyncio
+async def test_describe_domain_sagemaker():
+    """Test the describe_domain_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.describe_domain') as mock_describe_domain:
+        domain_id = 'test-domain'
+        expected_result = {
+            'DomainId': domain_id,
+            'DomainName': 'Test Domain',
+            'CreationTime': '2023-01-01T00:00:00',
+        }
+        mock_describe_domain.return_value = expected_result
+
+        result = await describe_domain_sagemaker(domain_id)
+
+        mock_describe_domain.assert_called_once_with(domain_id)
+        assert result == {'domain_details': expected_result}
+
+
+@pytest.mark.asyncio
+async def test_create_presigned_url_for_domain_sagemaker():
+    """Test the create_presigned_url_for_domain_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.create_presigned_domain_url') as mock_create_url:
+        domain_id = 'test-domain'
+        expiration = 3600
+        user_profile_name = 'test-user-profile'
+        url = 'https://example.com/presigned-domain-url'
+        mock_create_url.return_value = url
+
+        result = await create_presigned_url_for_domain_sagemaker(
+            domain_id=domain_id, user_profile_name=user_profile_name, expiration_seconds=expiration
+        )
+
+        mock_create_url.assert_called_once_with(domain_id, user_profile_name, expiration)
+        assert result == {'presigned_url': url}
