@@ -11,11 +11,13 @@ from sagemaker_ai_mcp_server.helpers import (
     delete_endpoint,
     delete_endpoint_config,
     delete_mlflow_tracking_server,
+    delete_model,
     delete_pipeline,
     describe_domain,
     describe_endpoint,
     describe_endpoint_config,
     describe_mlflow_tracking_server,
+    describe_model,
     describe_pipeline,
     describe_pipeline_definition_for_execution,
     describe_pipeline_execution,
@@ -26,6 +28,7 @@ from sagemaker_ai_mcp_server.helpers import (
     list_endpoint_configs,
     list_endpoints,
     list_mlflow_tracking_servers,
+    list_models,
     list_pipeline_execution_steps,
     list_pipeline_executions,
     list_pipeline_parameters_for_execution,
@@ -91,6 +94,9 @@ mcp = FastMCP(
     - Create a presigned URL for a SageMaker Domain
     - List SageMaker Spaces
     - List SageMaker User Profiles
+    - Describe a Model in SageMaker
+    - List Models in SageMaker
+    - Delete a Model in SageMaker
     
     Use these tools to manage your SageMaker resources effectively.
     """,
@@ -1568,6 +1574,104 @@ async def list_user_profiles_sagemaker() -> Dict[str, List]:
     except Exception as e:
         logger.error(f'Error listing user profiles: {e}')
         raise ValueError(f'Failed to list user profiles: {e}')
+
+
+@mcp.tool(name='describe_model_sagemaker', description='Describe a SageMaker Model')
+async def describe_model_sagemaker(
+    model_name: Annotated[str, Field(description='The name of the SageMaker Model to describe')],
+) -> Dict[str, Any]:
+    """Describe a specified SageMaker Model.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker Model by providing its name.
+    This returns comprehensive information about the model's configuration, status, and other details.
+
+    ## Example
+
+    ```python
+    model_details = await describe_model_sagemaker(model_name='my-model')
+    print(model_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker Model.
+
+    ## Returns
+    A dictionary containing the model details.
+    """
+    try:
+        model_details = await describe_model(model_name)
+        return {'model_details': model_details}
+    except Exception as e:
+        logger.error(f'Error describing model {model_name}: {e}')
+        raise ValueError(f'Failed to describe model {model_name}: {e}')
+
+
+@mcp.tool(name='list_models_sagemaker', description='List all SageMaker Models')
+async def list_models_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Models.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Models in your account in the current region.
+    This is typically used to see what models are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    models = await list_models_sagemaker()
+    print(models)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'models': A list of dictionaries, each representing a SageMaker Model with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Models.
+    """
+    try:
+        models = await list_models()
+        return {'models': models}
+    except Exception as e:
+        logger.error(f'Error listing models: {e}')
+        raise ValueError(f'Failed to list models: {e}')
+
+
+@mcp.tool(name='delete_model_sagemaker', description='Delete a SageMaker Model')
+async def delete_model_sagemaker(
+    model_name: Annotated[str, Field(description='The name of the SageMaker Model to delete')],
+) -> Dict[str, str]:
+    """Delete a specified SageMaker Model.
+
+    ## Usage
+
+    Use this tool to delete a SageMaker Model by providing its name. This is useful for cleaning up
+    models that are no longer needed.
+
+    ## Example
+
+    ```python
+    result = await delete_model_sagemaker(model_name='my-model')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await delete_model(model_name)
+        return {'message': f"Model '{model_name}' deleted successfully"}
+    except Exception as e:
+        logger.error(f'Error deleting model {model_name}: {e}')
+        raise ValueError(f'Failed to delete model {model_name}: {e}')
 
 
 def main():
