@@ -2,11 +2,15 @@
 
 import pytest
 from sagemaker_ai_mcp_server.server import (
+    create_mlflow_tracking_server_sagemaker,
+    create_presigned_url_for_mlflow_tracking_server_sagemaker,
     delete_endpoint_config_sagemaker,
     delete_endpoint_sagemaker,
+    delete_mlflow_tracking_server_sagemaker,
     delete_pipeline_sagemaker,
     describe_endpoint_config_sagemaker,
     describe_endpoint_sagemaker,
+    describe_mlflow_tracking_server_sagemaker,
     describe_pipeline_definition_for_execution_sagemaker,
     describe_pipeline_execution_sagemaker,
     describe_pipeline_sagemaker,
@@ -15,6 +19,7 @@ from sagemaker_ai_mcp_server.server import (
     describe_transform_job_sagemaker,
     list_endpoint_configs_sagemaker,
     list_endpoints_sagemaker,
+    list_mlflow_tracking_servers_sagemaker,
     list_pipeline_execution_steps_sagemaker,
     list_pipeline_executions_sagemaker,
     list_pipeline_parameters_for_execution_sagemaker,
@@ -22,6 +27,8 @@ from sagemaker_ai_mcp_server.server import (
     list_processing_jobs_sagemaker,
     list_training_jobs_sagemaker,
     list_transform_jobs_sagemaker,
+    start_mlflow_tracking_server_sagemaker,
+    stop_mlflow_tracking_server_sagemaker,
     stop_processing_job_sagemaker,
     stop_training_job_sagemaker,
     stop_transform_job_sagemaker,
@@ -419,3 +426,134 @@ async def test_describe_pipeline_execution_sagemaker():
 
         mock_describe_execution.assert_called_once_with(execution_arn)
         assert result == {'pipeline_execution_details': expected_result}
+
+
+@pytest.mark.asyncio
+async def test_create_mlflow_tracking_server_sagemaker():
+    """Test the create_mlflow_tracking_server_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.create_mlflow_tracking_server'
+    ) as mock_create_server:
+        server_name = 'test-mlflow-server'
+        artifact_uri = 's3://test-bucket/artifacts'
+        server_size = 'Medium'
+        msg = f"MLflow Tracking Server '{server_name}' created successfully"
+
+        result = await create_mlflow_tracking_server_sagemaker(
+            tracking_server_name=server_name,
+            artifact_store_uri=artifact_uri,
+            tracking_server_size=server_size,
+        )
+
+        mock_create_server.assert_called_once_with(server_name, artifact_uri, server_size)
+        assert result == {'message': msg}
+
+
+@pytest.mark.asyncio
+async def test_delete_mlflow_tracking_server_sagemaker():
+    """Test the delete_mlflow_tracking_server_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.delete_mlflow_tracking_server'
+    ) as mock_delete_server:
+        server_name = 'test-mlflow-server'
+        msg = f"MLflow Tracking Server '{server_name}' deleted successfully"
+
+        result = await delete_mlflow_tracking_server_sagemaker(server_name)
+
+        mock_delete_server.assert_called_once_with(server_name)
+        assert result == {'message': msg}
+
+
+@pytest.mark.asyncio
+async def test_list_mlflow_tracking_servers_sagemaker():
+    """Test the list_mlflow_tracking_servers_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_mlflow_tracking_servers') as mock_list_servers:
+        mock_list_servers.return_value = [
+            {'TrackingServerName': 'test-mlflow-server-1'},
+            {'TrackingServerName': 'test-mlflow-server-2'},
+        ]
+
+        result = await list_mlflow_tracking_servers_sagemaker()
+
+        mock_list_servers.assert_called_once()
+        assert result == {
+            'tracking_servers': [
+                {'TrackingServerName': 'test-mlflow-server-1'},
+                {'TrackingServerName': 'test-mlflow-server-2'},
+            ]
+        }
+
+
+@pytest.mark.asyncio
+async def test_describe_mlflow_tracking_server_sagemaker():
+    """Test the describe_mlflow_tracking_server_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.describe_mlflow_tracking_server'
+    ) as mock_describe_server:
+        server_name = 'test-mlflow-server'
+        arn_base = 'arn:aws:sagemaker:us-west-2:123456789012'
+        server_arn = f'{arn_base}:mlflow-tracking-server/{server_name}'
+        expected_result = {
+            'TrackingServerName': server_name,
+            'TrackingServerArn': server_arn,
+            'TrackingServerStatus': 'InService',
+            'CreationTime': '2023-01-01T00:00:00',
+        }
+        mock_describe_server.return_value = expected_result
+
+        result = await describe_mlflow_tracking_server_sagemaker(server_name)
+
+        mock_describe_server.assert_called_once_with(server_name)
+        assert result == {'tracking_server_details': expected_result}
+
+
+@pytest.mark.asyncio
+async def test_create_presigned_url_for_mlflow_tracking_server_sagemaker():
+    """Test the create_presigned_url function for MLflow tracking server."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.'
+        'create_presigned_mlflow_tracking_server_url'
+    ) as mock_create_url:
+        server_name = 'test-mlflow-server'
+        expiration = 3600
+        url = 'https://test-presigned-url.aws.com'
+        mock_create_url.return_value = url
+
+        func = create_presigned_url_for_mlflow_tracking_server_sagemaker
+        result = await func(
+            tracking_server_name=server_name,
+            expiration_seconds=expiration
+        )
+
+        mock_create_url.assert_called_once_with(server_name, expiration)
+        assert result == {'presigned_url': url}
+
+
+@pytest.mark.asyncio
+async def test_start_mlflow_tracking_server_sagemaker():
+    """Test the start_mlflow_tracking_server_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.start_mlflow_tracking_server'
+    ) as mock_start_server:
+        server_name = 'test-mlflow-server'
+        msg = f"MLflow Tracking Server '{server_name}' started successfully"
+
+        result = await start_mlflow_tracking_server_sagemaker(server_name)
+
+        mock_start_server.assert_called_once_with(server_name)
+        assert result == {'message': msg}
+
+
+@pytest.mark.asyncio
+async def test_stop_mlflow_tracking_server_sagemaker():
+    """Test the stop_mlflow_tracking_server_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.stop_mlflow_tracking_server'
+    ) as mock_stop_server:
+        server_name = 'test-mlflow-server'
+        msg = f"MLflow Tracking Server '{server_name}' stopped successfully"
+
+        result = await stop_mlflow_tracking_server_sagemaker(server_name)
+
+        mock_stop_server.assert_called_once_with(server_name)
+        assert result == {'message': msg}
