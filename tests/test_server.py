@@ -29,8 +29,10 @@ from sagemaker_ai_mcp_server.server import (
     list_pipeline_parameters_for_execution_sagemaker,
     list_pipelines_sagemaker,
     list_processing_jobs_sagemaker,
+    list_spaces_sagemaker,
     list_training_jobs_sagemaker,
     list_transform_jobs_sagemaker,
+    list_user_profiles_sagemaker,
     start_mlflow_tracking_server_sagemaker,
     stop_mlflow_tracking_server_sagemaker,
     stop_processing_job_sagemaker,
@@ -613,3 +615,27 @@ async def test_create_presigned_url_for_domain_sagemaker():
 
         mock_create_url.assert_called_once_with(domain_id, user_profile_name, expiration)
         assert result == {'presigned_url': url}
+
+
+@pytest.mark.asyncio
+async def test_list_spaces_sagemaker():
+    """Test the list_spaces_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_spaces') as mock_list_spaces:
+        mock_list_spaces.return_value = [{'SpaceName': 'test-space'}]
+
+        result = await list_spaces_sagemaker()
+
+        mock_list_spaces.assert_called_once()
+        assert result == {'spaces': [{'SpaceName': 'test-space'}]}
+
+
+@pytest.mark.asyncio
+async def test_list_user_profiles_sagemaker():
+    """Test the list_user_profiles_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_user_profiles') as mock_list_user_profiles:
+        mock_list_user_profiles.return_value = [{'UserProfileName': 'test-user-profile'}]
+
+        result = await list_user_profiles_sagemaker()
+
+        mock_list_user_profiles.assert_called_once()
+        assert result == {'user_profiles': [{'UserProfileName': 'test-user-profile'}]}

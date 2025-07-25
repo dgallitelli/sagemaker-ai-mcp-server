@@ -34,8 +34,10 @@ from sagemaker_ai_mcp_server.helpers import (
     list_pipeline_parameters_for_execution,
     list_pipelines,
     list_processing_jobs,
+    list_spaces,
     list_training_jobs,
     list_transform_jobs,
+    list_user_profiles,
     start_mlflow_tracking_server,
     start_pipeline_execution,
     stop_mlflow_tracking_server,
@@ -775,3 +777,39 @@ class TestHelpers:
             DomainId='test-domain', UserProfileName='test-profile-name', ExpirationSeconds=3600
         )
         assert url == 'https://example.com/presigned-domain-url'
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_spaces(self, mock_get_sagemaker_client):
+        """Test list_spaces function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        mock_response = {'Spaces': [{'SpaceName': 'test-space', 'SpaceId': 'space-id-123'}]}
+        mock_client.list_spaces.return_value = mock_response
+
+        spaces = await list_spaces()
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.list_spaces.assert_called_once()
+        expected = [{'SpaceName': 'test-space', 'SpaceId': 'space-id-123'}]
+        assert spaces == expected
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_user_profiles(self, mock_get_sagemaker_client):
+        """Test list_user_profiles function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        mock_response = {
+            'UserProfiles': [{'UserProfileName': 'test-user', 'UserProfileArn': 'arn:aws:...'}]
+        }
+        mock_client.list_user_profiles.return_value = mock_response
+
+        profiles = await list_user_profiles()
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.list_user_profiles.assert_called_once()
+        expected = [{'UserProfileName': 'test-user', 'UserProfileArn': 'arn:aws:...'}]
+        assert profiles == expected
