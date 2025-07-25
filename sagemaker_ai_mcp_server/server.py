@@ -54,7 +54,6 @@ mcp = FastMCP(
     instructions="""
     SageMaker AI MCP Server provides tools to interact with Amazon SageMaker AI
     service.
-    
     The server enables you to:
     - List SageMaker Endpoints
     - List SageMaker Endpoint Configurations
@@ -97,7 +96,6 @@ mcp = FastMCP(
     - Describe a Model in SageMaker
     - List Models in SageMaker
     - Delete a Model in SageMaker
-    
     Use these tools to manage your SageMaker resources effectively.
     """,
     dependencies=[
