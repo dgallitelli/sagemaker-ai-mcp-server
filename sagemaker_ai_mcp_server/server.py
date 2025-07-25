@@ -5,11 +5,14 @@ from mcp.server.fastmcp import FastMCP
 from pydantic import Field
 from sagemaker_ai_mcp_server.helpers import (
     create_mlflow_tracking_server,
+    create_presigned_domain_url,
     create_presigned_mlflow_tracking_server_url,
+    delete_domain,
     delete_endpoint,
     delete_endpoint_config,
     delete_mlflow_tracking_server,
     delete_pipeline,
+    describe_domain,
     describe_endpoint,
     describe_endpoint_config,
     describe_mlflow_tracking_server,
@@ -19,6 +22,7 @@ from sagemaker_ai_mcp_server.helpers import (
     describe_processing_job,
     describe_training_job,
     describe_transform_job,
+    list_domains,
     list_endpoint_configs,
     list_endpoints,
     list_mlflow_tracking_servers,
@@ -79,7 +83,11 @@ mcp = FastMCP(
     - Start an Managed MLflow Tracking Server in SageMaker
     - Stop an Managed MLflow Tracking Server in SageMaker
     - Create a presigned URL for an Managed MLflow Tracking Server in SageMaker
-
+    - Delete a SageMaker Domain
+    - List SageMaker Domains
+    - Describe a SageMaker Domain
+    - Create a presigned URL for a SageMaker Domain
+    
     Use these tools to manage your SageMaker resources effectively.
     """,
     dependencies=[
@@ -1347,6 +1355,151 @@ async def stop_mlflow_tracking_server_sagemaker(
     except Exception as e:
         logger.error(f'Error stopping MLflow Tracking Server {tracking_server_name}: {e}')
         raise ValueError(f'Failed to stop MLflow Tracking Server {tracking_server_name}: {e}')
+
+
+@mcp.tool(name='delete_domain_sagemaker', description='Delete a SageMaker Domain')
+async def delete_domain_sagemaker(
+    domain_id: Annotated[str, Field(description='The ID of the SageMaker Domain to delete')],
+) -> Dict[str, str]:
+    """Delete a specified SageMaker Domain.
+
+    ## Usage
+
+    Use this tool to delete a SageMaker Domain by providing its ID. This is useful for cleaning
+    up domains that are no longer needed.
+
+    ## Example
+
+    ```python
+    result = await delete_domain_sagemaker(domain_id='d-1234567890')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await delete_domain(domain_id)
+        return {'message': f"Domain '{domain_id}' deleted successfully"}
+    except Exception as e:
+        logger.error(f'Error deleting domain {domain_id}: {e}')
+        raise ValueError(f'Failed to delete domain {domain_id}: {e}')
+
+
+@mcp.tool(name='list_domains_sagemaker', description='List all SageMaker Domains')
+async def list_domains_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Domains.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Domains in your account in the current region.
+    This is typically used to see what domains are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    domains = await list_domains_sagemaker()
+    print(domains)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'domains': A list of dictionaries, each representing a SageMaker Domain with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Domains.
+    """
+    try:
+        domains = await list_domains()
+        return {'domains': domains}
+    except Exception as e:
+        logger.error(f'Error listing domains: {e}')
+        raise ValueError(f'Failed to list domains: {e}')
+
+
+@mcp.tool(name='describe_domain_sagemaker', description='Describe a SageMaker Domain')
+async def describe_domain_sagemaker(
+    domain_id: Annotated[str, Field(description='The ID of the SageMaker Domain to describe')],
+) -> Dict[str, Any]:
+    """Describe a specified SageMaker Domain.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker Domain by providing its ID.
+    This returns comprehensive information about the domain's configuration, status, and other details.
+
+    ## Example
+
+    ```python
+    domain_details = await describe_domain_sagemaker(domain_id='d-1234567890')
+    print(domain_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker Domain.
+
+    ## Returns
+    A dictionary containing the domain details.
+    """
+    try:
+        domain_details = await describe_domain(domain_id)
+        return {'domain_details': domain_details}
+    except Exception as e:
+        logger.error(f'Error describing domain {domain_id}: {e}')
+        raise ValueError(f'Failed to describe domain {domain_id}: {e}')
+
+
+@mcp.tool(
+    name='create_presigned_url_for_domain_sagemaker',
+    description='Create a presigned URL for a SageMaker Domain',
+)
+async def create_presigned_url_for_domain_sagemaker(
+    domain_id: Annotated[str, Field(description='The ID of the SageMaker Domain')],
+    user_profile_name: Annotated[str, Field(description='The name of the user profile')],
+    expiration_seconds: Annotated[
+        int, Field(description='The expiration time for the presigned URL in seconds')
+    ] = 3600,
+) -> Dict[str, str]:
+    """Create a presigned URL for accessing a SageMaker Domain.
+
+    ## Usage
+
+    Use this tool to create a presigned URL for a SageMaker Domain by providing its ID and user profile name.
+    This is useful for granting temporary access to the domain.
+
+    ## Example
+
+    ```python
+    presigned_url = await create_presigned_url_for_domain_sagemaker(
+        domain_id='d-1234567890', user_profile_name='test-user', expiration_seconds=3600
+    )
+    print(presigned_url)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'presigned_url': The presigned URL for the SageMaker Domain.
+
+    ## Returns
+    A dictionary containing the presigned URL.
+    """
+    try:
+        presigned_url = await create_presigned_domain_url(
+            domain_id,
+            user_profile_name,
+            expiration_seconds,
+        )
+        return {'presigned_url': presigned_url}
+    except Exception as e:
+        logger.error(f'Error creating presigned URL for domain {domain_id}: {e}')
+        raise ValueError(f'Failed to create presigned URL for domain {domain_id}: {e}')
 
 
 def main():
