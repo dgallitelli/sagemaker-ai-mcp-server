@@ -31,8 +31,10 @@ from sagemaker_ai_mcp_server.helpers import (
     list_pipeline_parameters_for_execution,
     list_pipelines,
     list_processing_jobs,
+    list_spaces,
     list_training_jobs,
     list_transform_jobs,
+    list_user_profiles,
     start_mlflow_tracking_server,
     start_pipeline_execution,
     stop_mlflow_tracking_server,
@@ -87,6 +89,8 @@ mcp = FastMCP(
     - List SageMaker Domains
     - Describe a SageMaker Domain
     - Create a presigned URL for a SageMaker Domain
+    - List SageMaker Spaces
+    - List SageMaker User Profiles
     
     Use these tools to manage your SageMaker resources effectively.
     """,
@@ -1502,9 +1506,73 @@ async def create_presigned_url_for_domain_sagemaker(
         raise ValueError(f'Failed to create presigned URL for domain {domain_id}: {e}')
 
 
+@mcp.tool(name='list_spaces_sagemaker', description='List all SageMaker Spaces')
+async def list_spaces_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Spaces.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Spaces in your account in the current region.
+    This is typically used to see what spaces are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    spaces = await list_spaces_sagemaker()
+    print(spaces)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'spaces': A list of dictionaries, each representing a SageMaker Space with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Spaces.
+    """
+    try:
+        spaces = await list_spaces()
+        return {'spaces': spaces}
+    except Exception as e:
+        logger.error(f'Error listing spaces: {e}')
+        raise ValueError(f'Failed to list spaces: {e}')
+
+
+@mcp.tool(name='list_user_profiles_sagemaker', description='List all SageMaker User Profiles')
+async def list_user_profiles_sagemaker() -> Dict[str, List]:
+    """List all SageMaker User Profiles.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker User Profiles in your account in the current region.
+    This is typically used to see what user profiles are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    user_profiles = await list_user_profiles_sagemaker()
+    print(user_profiles)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'user_profiles': A list of dictionaries, each representing a SageMaker User Profile with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker User Profiles.
+    """
+    try:
+        user_profiles = await list_user_profiles()
+        return {'user_profiles': user_profiles}
+    except Exception as e:
+        logger.error(f'Error listing user profiles: {e}')
+        raise ValueError(f'Failed to list user profiles: {e}')
+
+
 def main():
     """Run the SageMaker AI MCP Server."""
-    logger.info('Starting SageMaker AI MCP Server...')
+    logger.info('Welcome to the SageMaker AI MCP Server!')
     mcp.run()
 
 
