@@ -11,12 +11,14 @@ from sagemaker_ai_mcp_server.helpers import (
     delete_endpoint_config,
     delete_mlflow_tracking_server,
     delete_model,
+    delete_model_card,
     delete_pipeline,
     describe_domain,
     describe_endpoint,
     describe_endpoint_config,
     describe_mlflow_tracking_server,
     describe_model,
+    describe_model_card,
     describe_pipeline,
     describe_pipeline_definition_for_execution,
     describe_pipeline_execution,
@@ -31,6 +33,9 @@ from sagemaker_ai_mcp_server.helpers import (
     list_endpoint_configs,
     list_endpoints,
     list_mlflow_tracking_servers,
+    list_model_card_export_jobs,
+    list_model_card_versions,
+    list_model_cards,
     list_models,
     list_pipeline_execution_steps,
     list_pipeline_executions,
@@ -869,3 +874,96 @@ class TestHelpers:
 
         mock_get_sagemaker_client.assert_called_once()
         mock_client.delete_model.assert_called_once_with(ModelName='test-model')
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_model_cards(self, mock_get_sagemaker_client):
+        """Test list_model_cards function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        mock_response = {
+            'ModelCardSummaries': [{'ModelCardName': 'test-card', 'ModelCardArn': 'arn:aws:...'}]
+        }
+        mock_client.list_model_cards.return_value = mock_response
+
+        cards = await list_model_cards()
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.list_model_cards.assert_called_once()
+        expected = [{'ModelCardName': 'test-card', 'ModelCardArn': 'arn:aws:...'}]
+        assert cards == expected
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_describe_model_card(self, mock_get_sagemaker_client):
+        """Test describe_model_card function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        expected_response = {
+            'ModelCardName': 'test-card',
+            'ModelCardArn': 'arn:aws:sagemaker:us-west-2:123456789012:model-card/test-card',
+            'ModelCardStatus': 'Draft',
+        }
+        mock_client.describe_model_card.return_value = expected_response
+
+        response = await describe_model_card('test-card')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.describe_model_card.assert_called_once_with(ModelCardName='test-card')
+        assert response == expected_response
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_model_card_export_jobs(self, mock_get_sagemaker_client):
+        """Test list_model_card_export_jobs function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        mock_response = {
+            'ModelCardExportJobSummaries': [
+                {'ModelCardExportJobName': 'test-export-job', 'ModelCardArn': 'arn:aws:...'}
+            ]
+        }
+        mock_client.list_model_card_export_jobs.return_value = mock_response
+
+        jobs = await list_model_card_export_jobs()
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.list_model_card_export_jobs.assert_called_once()
+        expected = [{'ModelCardExportJobName': 'test-export-job', 'ModelCardArn': 'arn:aws:...'}]
+        assert jobs == expected
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_model_card_versions(self, mock_get_sagemaker_client):
+        """Test list_model_card_versions function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        mock_response = {
+            'ModelCardVersionSummaryList': [
+                {'ModelCardVersion': '1.0', 'ModelCardArn': 'arn:aws:...'}
+            ]
+        }
+        mock_client.list_model_card_versions.return_value = mock_response
+
+        versions = await list_model_card_versions('test-card')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.list_model_card_versions.assert_called_once_with(ModelCardName='test-card')
+        expected = [{'ModelCardVersion': '1.0', 'ModelCardArn': 'arn:aws:...'}]
+        assert versions == expected
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def delete_model_card(self, mock_get_sagemaker_client):
+        """Test delete_model_card function."""
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        await delete_model_card('test-card')
+
+        mock_get_sagemaker_client.assert_called_once()
+        mock_client.delete_model_card.assert_called_once_with(ModelCardName='test-card')

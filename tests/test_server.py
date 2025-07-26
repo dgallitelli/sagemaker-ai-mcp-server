@@ -9,12 +9,14 @@ from sagemaker_ai_mcp_server.server import (
     delete_endpoint_config_sagemaker,
     delete_endpoint_sagemaker,
     delete_mlflow_tracking_server_sagemaker,
+    delete_model_card_sagemaker,
     delete_model_sagemaker,
     delete_pipeline_sagemaker,
     describe_domain_sagemaker,
     describe_endpoint_config_sagemaker,
     describe_endpoint_sagemaker,
     describe_mlflow_tracking_server_sagemaker,
+    describe_model_card_sagemaker,
     describe_model_sagemaker,
     describe_pipeline_definition_for_execution_sagemaker,
     describe_pipeline_execution_sagemaker,
@@ -26,6 +28,9 @@ from sagemaker_ai_mcp_server.server import (
     list_endpoint_configs_sagemaker,
     list_endpoints_sagemaker,
     list_mlflow_tracking_servers_sagemaker,
+    list_model_card_export_jobs_sagemaker,
+    list_model_card_versions_sagemaker,
+    list_model_cards_sagemaker,
     list_models_sagemaker,
     list_pipeline_execution_steps_sagemaker,
     list_pipeline_executions_sagemaker,
@@ -690,5 +695,97 @@ async def test_list_models_sagemaker():
             'models': [
                 {'ModelName': 'test-model-1'},
                 {'ModelName': 'test-model-2'},
+            ]
+        }
+
+
+@pytest.mark.asyncio
+async def test_delete_model_card_sagemaker():
+    """Test the delete_model_card_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.delete_model_card') as mock_delete_model_card:
+        model_card_id = 'test-model-card'
+        await delete_model_card_sagemaker(model_card_id)
+
+        mock_delete_model_card.assert_called_once_with(model_card_id)
+        expected_msg = f"Model Card '{model_card_id}' deleted successfully"
+        assert {'message': expected_msg} == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
+async def test_list_model_cards_sagemaker():
+    """Test the list_model_cards_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_model_cards') as mock_list_model_cards:
+        mock_list_model_cards.return_value = [
+            {'ModelCardId': 'test-model-card-1'},
+            {'ModelCardId': 'test-model-card-2'},
+        ]
+
+        result = await list_model_cards_sagemaker()
+
+        mock_list_model_cards.assert_called_once()
+        assert result == {
+            'model_cards': [
+                {'ModelCardId': 'test-model-card-1'},
+                {'ModelCardId': 'test-model-card-2'},
+            ]
+        }
+
+
+@pytest.mark.asyncio
+async def test_describe_model_card_sagemaker():
+    """Test the describe_model_card_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.describe_model_card') as mock_describe_model_card:
+        model_card_id = 'test-model-card'
+        expected_result = {
+            'ModelCardId': model_card_id,
+            'ModelCardArn': f'arn:aws:sagemaker:us-west-2:123456789012:model-card/{model_card_id}',
+            'CreationTime': '2023-01-01T00:00:00',
+        }
+        mock_describe_model_card.return_value = expected_result
+
+        result = await describe_model_card_sagemaker(model_card_id)
+
+        mock_describe_model_card.assert_called_once_with(model_card_id)
+        assert result == {'model_card_details': expected_result}
+
+
+@pytest.mark.asyncio
+async def test_list_model_card_export_jobs_sagemaker():
+    """Test the list_model_card_export_jobs_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.list_model_card_export_jobs'
+    ) as mock_list_export_jobs:
+        mock_list_export_jobs.return_value = [
+            {'ModelCardExportJobName': 'test-export-job-1'},
+            {'ModelCardExportJobName': 'test-export-job-2'},
+        ]
+
+        result = await list_model_card_export_jobs_sagemaker('test-model-card')
+
+        mock_list_export_jobs.assert_called_once_with('test-model-card')
+        assert result == {
+            'model_card_export_jobs': [
+                {'ModelCardExportJobName': 'test-export-job-1'},
+                {'ModelCardExportJobName': 'test-export-job-2'},
+            ]
+        }
+
+
+@pytest.mark.asyncio
+async def test_list_model_card_versions_sagemaker():
+    """Test the list_model_card_versions_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_model_card_versions') as mock_list_versions:
+        mock_list_versions.return_value = [
+            {'ModelCardVersion': 'v1.0'},
+            {'ModelCardVersion': 'v1.1'},
+        ]
+
+        result = await list_model_card_versions_sagemaker('test-model-card')
+
+        mock_list_versions.assert_called_once_with('test-model-card')
+        assert result == {
+            'model_card_versions': [
+                {'ModelCardVersion': 'v1.0'},
+                {'ModelCardVersion': 'v1.1'},
             ]
         }

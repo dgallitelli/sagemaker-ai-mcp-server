@@ -12,12 +12,14 @@ from sagemaker_ai_mcp_server.helpers import (
     delete_endpoint_config,
     delete_mlflow_tracking_server,
     delete_model,
+    delete_model_card,
     delete_pipeline,
     describe_domain,
     describe_endpoint,
     describe_endpoint_config,
     describe_mlflow_tracking_server,
     describe_model,
+    describe_model_card,
     describe_pipeline,
     describe_pipeline_definition_for_execution,
     describe_pipeline_execution,
@@ -28,6 +30,9 @@ from sagemaker_ai_mcp_server.helpers import (
     list_endpoint_configs,
     list_endpoints,
     list_mlflow_tracking_servers,
+    list_model_card_export_jobs,
+    list_model_card_versions,
+    list_model_cards,
     list_models,
     list_pipeline_execution_steps,
     list_pipeline_executions,
@@ -96,6 +101,12 @@ mcp = FastMCP(
     - Describe a Model in SageMaker
     - List Models in SageMaker
     - Delete a Model in SageMaker
+    - Describe a Model Card in SageMaker
+    - List Model Cards in SageMaker
+    - Delete a Model Card in SageMaker
+    - Describe a Model Card Export Job in SageMaker
+    - List Model Card Export Jobs in SageMaker
+    - List Model Card Versions in SageMaker
     Use these tools to manage your SageMaker resources effectively.
     """,
     dependencies=[
@@ -1670,6 +1681,186 @@ async def delete_model_sagemaker(
     except Exception as e:
         logger.error(f'Error deleting model {model_name}: {e}')
         raise ValueError(f'Failed to delete model {model_name}: {e}')
+
+
+@mcp.tool(name='describe_model_card_sagemaker', description='Describe a SageMaker Model Card')
+async def describe_model_card_sagemaker(
+    model_card_name: Annotated[
+        str, Field(description='The name of the SageMaker Model Card to describe')
+    ],
+) -> Dict[str, Any]:
+    """Describe a specified SageMaker Model Card.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker Model Card by providing its name.
+    This returns comprehensive information about the model card's configuration, status, and other details.
+
+    ## Example
+
+    ```python
+    model_card_details = await describe_model_card_sagemaker(model_card_name='my-model-card')
+    print(model_card_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker Model Card.
+
+    ## Returns
+    A dictionary containing the model card details.
+    """
+    try:
+        model_card_details = await describe_model_card(model_card_name)
+        return {'model_card_details': model_card_details}
+    except Exception as e:
+        logger.error(f'Error describing model card {model_card_name}: {e}')
+        raise ValueError(f'Failed to describe model card {model_card_name}: {e}')
+
+
+@mcp.tool(name='delete_model_card_sagemaker', description='Delete a SageMaker Model Card')
+async def delete_model_card_sagemaker(
+    model_card_name: Annotated[
+        str, Field(description='The name of the SageMaker Model Card to delete')
+    ],
+) -> Dict[str, str]:
+    """Delete a specified SageMaker Model Card.
+
+    ## Usage
+
+    Use this tool to delete a SageMaker Model Card by providing its name. This is useful for cleaning up
+    model cards that are no longer needed.
+
+    ## Example
+
+    ```python
+    result = await delete_model_card_sagemaker(model_card_name='my-model-card')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await delete_model_card(model_card_name)
+        return {'message': f"Model Card '{model_card_name}' deleted successfully"}
+    except Exception as e:
+        logger.error(f'Error deleting model card {model_card_name}: {e}')
+        raise ValueError(f'Failed to delete model card {model_card_name}: {e}')
+
+
+@mcp.tool(name='list_model_cards_sagemaker', description='List all SageMaker Model Cards')
+async def list_model_cards_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Model Cards.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Model Cards in your account in the current region.
+    This is typically used to see what model cards are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    model_cards = await list_model_cards_sagemaker()
+    print(model_cards)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'model_cards': A list of dictionaries, each representing a SageMaker Model Card with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Model Cards.
+    """
+    try:
+        model_cards = await list_model_cards()
+        return {'model_cards': model_cards}
+    except Exception as e:
+        logger.error(f'Error listing model cards: {e}')
+        raise ValueError(f'Failed to list model cards: {e}')
+
+
+@mcp.tool(
+    name='list_model_card_export_jobs_sagemaker',
+    description='List Model Card Export Jobs for a SageMaker Model Card',
+)
+async def list_model_card_export_jobs_sagemaker(
+    model_card_name: Annotated[
+        str, Field(description='The name of the SageMaker Model Card to list export jobs for')
+    ],
+) -> Dict[str, List]:
+    """List Model Card Export Jobs for a specified SageMaker Model Card.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all export jobs for a specific SageMaker Model Card by providing its name.
+    This helps you track the export jobs associated with the model card.
+
+    ## Example
+
+    ```python
+    export_jobs = await list_model_card_export_jobs_sagemaker(model_card_name='my-model-card')
+    print(export_jobs)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'model_card_export_jobs': A list of dictionaries, each representing an export job for the SageMaker Model Card.
+
+    ## Returns
+    A dictionary containing a list of Model Card Export Jobs.
+    """
+    try:
+        export_jobs = await list_model_card_export_jobs(model_card_name)
+        return {'model_card_export_jobs': export_jobs}
+    except Exception as e:
+        logger.error(f'Error listing model card export jobs for {model_card_name}: {e}')
+        raise ValueError(f'Failed to list model card export jobs for {model_card_name}: {e}')
+
+
+@mcp.tool(
+    name='list_model_card_versions_sagemaker',
+    description='List all versions of a SageMaker Model Card',
+)
+async def list_model_card_versions_sagemaker(
+    model_card_name: Annotated[
+        str, Field(description='The name of the SageMaker Model Card to list versions for')
+    ],
+) -> Dict[str, List]:
+    """List all versions of a SageMaker Model Card.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all versions for a specific SageMaker Model Card by providing its name.
+    This helps you track the different versions of the model card.
+
+    ## Example
+
+    ```python
+    model_card_versions = await list_model_card_versions_sagemaker(model_card_name='my-model-card')
+    print(model_card_versions)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'model_card_versions': A list of dictionaries, each representing a version of the SageMaker Model Card.
+
+    ## Returns
+    A dictionary containing a list of Model Card Versions.
+    """
+    try:
+        model_card_versions = await list_model_card_versions(model_card_name)
+        return {'model_card_versions': model_card_versions}
+    except Exception as e:
+        logger.error(f'Error listing model card versions for {model_card_name}: {e}')
+        raise ValueError(f'Failed to list model card versions for {model_card_name}: {e}')
 
 
 def main():
