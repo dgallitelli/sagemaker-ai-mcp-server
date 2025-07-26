@@ -2,9 +2,13 @@
 
 import pytest
 from sagemaker_ai_mcp_server.server import (
+    create_app_sagemaker,
     create_mlflow_tracking_server_sagemaker,
+    create_presigned_notebook_instance_url_sagemaker,
     create_presigned_url_for_domain_sagemaker,
     create_presigned_url_for_mlflow_tracking_server_sagemaker,
+    delete_app_image_config_sagemaker,
+    delete_app_sagemaker,
     delete_domain_sagemaker,
     delete_endpoint_config_sagemaker,
     delete_endpoint_sagemaker,
@@ -12,6 +16,8 @@ from sagemaker_ai_mcp_server.server import (
     delete_model_card_sagemaker,
     delete_model_sagemaker,
     delete_pipeline_sagemaker,
+    describe_app_image_config_sagemaker,
+    describe_app_sagemaker,
     describe_domain_sagemaker,
     describe_endpoint_config_sagemaker,
     describe_endpoint_sagemaker,
@@ -25,6 +31,7 @@ from sagemaker_ai_mcp_server.server import (
     describe_processing_job_sagemaker,
     describe_training_job_sagemaker,
     describe_transform_job_sagemaker,
+    list_apps_sagemaker,
     list_domains_sagemaker,
     list_endpoint_configs_sagemaker,
     list_endpoints_sagemaker,
@@ -455,7 +462,9 @@ async def test_create_mlflow_tracking_server_sagemaker():
         server_name = 'test-mlflow-server'
         artifact_uri = 's3://test-bucket/artifacts'
         server_size = 'Medium'
-        msg = f"MLflow Tracking Server '{server_name}' created successfully"
+        mock_create_server.return_value = (
+            'arn:aws:sagemaker:us-west-2:123456789012:mlflow-tracking-server/test-mlflow-server'
+        )
 
         result = await create_mlflow_tracking_server_sagemaker(
             tracking_server_name=server_name,
@@ -464,7 +473,7 @@ async def test_create_mlflow_tracking_server_sagemaker():
         )
 
         mock_create_server.assert_called_once_with(server_name, artifact_uri, server_size)
-        assert result == {'message': msg}
+        assert result == {'tracking_server_arn': mock_create_server.return_value}
 
 
 @pytest.mark.asyncio
@@ -869,3 +878,159 @@ async def test_stop_inference_recommendations_job_sagemaker():
         assert 'message' in result
         assert f"Inference Recommender Job '{job_name}' stopped successfully" in result['message']
         mock_stop_job.assert_called_once_with(job_name)
+
+
+@pytest.mark.asyncio
+async def test_create_app_sagemaker():
+    """Test create_app_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.create_app') as mock_create_app:
+        app_arn = 'arn:aws:sagemaker:us-west-2:123456789012:app/domain/user/app'
+        mock_create_app.return_value = app_arn
+
+        domain_id = 'test-domain'
+        user_profile_name = 'test-user'
+        app_type = 'JupyterServer'
+        app_name = 'test-app'
+        resource_spec = {'InstanceType': 'ml.t3.medium'}
+
+        result = await create_app_sagemaker(
+            domain_id=domain_id,
+            user_profile_name=user_profile_name,
+            app_type=app_type,
+            app_name=app_name,
+            resource_spec=resource_spec,
+        )
+
+        mock_create_app.assert_called_once_with(
+            domain_id,
+            user_profile_name,
+            app_type,
+            app_name,
+            resource_spec,
+        )
+        assert result == {'app_arn': app_arn}
+
+
+@pytest.mark.asyncio
+async def test_delete_app_sagemaker():
+    """Test delete_app_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.delete_app') as mock_delete_app:
+        domain_id = 'test-domain'
+        user_profile_name = 'test-user'
+        app_type = 'JupyterServer'
+        app_name = 'test-app'
+
+        result = await delete_app_sagemaker(
+            domain_id=domain_id,
+            user_profile_name=user_profile_name,
+            app_type=app_type,
+            app_name=app_name,
+        )
+
+        mock_delete_app.assert_called_once_with(domain_id, user_profile_name, app_type, app_name)
+        expected_msg = f"App '{app_name}' deletion initiated successfully"
+        assert result == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
+async def test_delete_app_image_config_sagemaker():
+    """Test delete_app_image_config_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.delete_app_image_config') as mock_delete_config:
+        config_name = 'test-app-image-config'
+
+        result = await delete_app_image_config_sagemaker(app_image_config_name=config_name)
+
+        mock_delete_config.assert_called_once_with(config_name)
+        expected_msg = f"App Image Config '{config_name}' deleted successfully"
+        assert result == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
+async def test_describe_app_sagemaker():
+    """Test describe_app_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.describe_app') as mock_describe_app:
+        domain_id = 'test-domain'
+        user_profile_name = 'test-user'
+        app_type = 'JupyterServer'
+        app_name = 'test-app'
+        expected_result = {
+            'AppName': app_name,
+            'AppType': app_type,
+            'DomainId': domain_id,
+            'UserProfileName': user_profile_name,
+            'Status': 'InService',
+        }
+        mock_describe_app.return_value = expected_result
+
+        result = await describe_app_sagemaker(
+            domain_id=domain_id,
+            user_profile_name=user_profile_name,
+            app_type=app_type,
+            app_name=app_name,
+        )
+
+        mock_describe_app.assert_called_once_with(domain_id, user_profile_name, app_type, app_name)
+        assert result == {'app_details': expected_result}
+
+
+@pytest.mark.asyncio
+async def test_describe_app_image_config_sagemaker():
+    """Test describe_app_image_config_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.describe_app_image_config') as mock_describe_config:
+        config_name = 'test-app-image-config'
+        expected_result = {
+            'AppImageConfigName': config_name,
+            'CreationTime': '2023-01-01T00:00:00Z',
+        }
+        mock_describe_config.return_value = expected_result
+
+        result = await describe_app_image_config_sagemaker(app_image_config_name=config_name)
+
+        mock_describe_config.assert_called_once_with(config_name)
+        assert result == {'app_image_config_details': expected_result}
+
+
+@pytest.mark.asyncio
+async def test_list_apps_sagemaker():
+    """Test list_apps_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_apps') as mock_list_apps:
+        expected_result = [
+            {
+                'AppName': 'test-app-1',
+                'AppType': 'JupyterServer',
+                'DomainId': 'test-domain',
+                'UserProfileName': 'test-user',
+            },
+            {
+                'AppName': 'test-app-2',
+                'AppType': 'KernelGateway',
+                'DomainId': 'test-domain',
+                'UserProfileName': 'test-user',
+            },
+        ]
+        mock_list_apps.return_value = expected_result
+
+        result = await list_apps_sagemaker()
+
+        mock_list_apps.assert_called_once()
+        assert result == {'apps': expected_result}
+
+
+@pytest.mark.asyncio
+async def test_create_presigned_notebook_instance_url_sagemaker():
+    """Test create_presigned_notebook_instance_url_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.create_presigned_notebook_instance_url'
+    ) as mock_create_url:
+        notebook_name = 'test-notebook'
+        expiration = 7200
+        expected_url = 'https://example.com/presigned-notebook-url'
+        mock_create_url.return_value = expected_url
+
+        result = await create_presigned_notebook_instance_url_sagemaker(
+            notebook_instance_name=notebook_name,
+            session_expiration_duration_in_seconds=expiration,
+        )
+
+        mock_create_url.assert_called_once_with(notebook_name, expiration)
+        assert result == {'presigned_url': expected_url}
