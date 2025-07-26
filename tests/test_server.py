@@ -15,6 +15,7 @@ from sagemaker_ai_mcp_server.server import (
     describe_domain_sagemaker,
     describe_endpoint_config_sagemaker,
     describe_endpoint_sagemaker,
+    describe_inference_recommendations_job_sagemaker,
     describe_mlflow_tracking_server_sagemaker,
     describe_model_card_sagemaker,
     describe_model_sagemaker,
@@ -27,6 +28,8 @@ from sagemaker_ai_mcp_server.server import (
     list_domains_sagemaker,
     list_endpoint_configs_sagemaker,
     list_endpoints_sagemaker,
+    list_inference_recommendations_job_steps_sagemaker,
+    list_inference_recommendations_jobs_sagemaker,
     list_mlflow_tracking_servers_sagemaker,
     list_model_card_export_jobs_sagemaker,
     list_model_card_versions_sagemaker,
@@ -42,6 +45,7 @@ from sagemaker_ai_mcp_server.server import (
     list_transform_jobs_sagemaker,
     list_user_profiles_sagemaker,
     start_mlflow_tracking_server_sagemaker,
+    stop_inference_recommendations_job_sagemaker,
     stop_mlflow_tracking_server_sagemaker,
     stop_processing_job_sagemaker,
     stop_training_job_sagemaker,
@@ -789,3 +793,79 @@ async def test_list_model_card_versions_sagemaker():
                 {'ModelCardVersion': 'v1.1'},
             ]
         }
+
+
+@pytest.mark.asyncio
+async def test_list_inference_recommendations_jobs_sagemaker():
+    """Test the list_inference_recommendations_jobs_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.list_inference_recommendations_jobs'
+    ) as mock_list_jobs:
+        mock_list_jobs.return_value = [
+            {'JobName': 'test-job-1', 'Status': 'Completed'},
+            {'JobName': 'test-job-2', 'Status': 'InProgress'},
+        ]
+
+        result = await list_inference_recommendations_jobs_sagemaker()
+
+        assert 'inference_recommendations_jobs' in result
+        assert len(result['inference_recommendations_jobs']) == 2
+        assert result['inference_recommendations_jobs'][0]['JobName'] == 'test-job-1'
+        mock_list_jobs.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_list_inference_recommendations_job_steps_sagemaker():
+    """Test the list_inference_recommendations_job_steps_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.list_inference_recommendations_job_steps'
+    ) as mock_list_steps:
+        job_name = 'test-job'
+        mock_list_steps.return_value = [
+            {'StepName': 'step-1', 'Status': 'Completed'},
+            {'StepName': 'step-2', 'Status': 'InProgress'},
+        ]
+
+        result = await list_inference_recommendations_job_steps_sagemaker(job_name=job_name)
+
+        assert 'steps' in result
+        assert len(result['steps']) == 2
+        assert result['steps'][0]['StepName'] == 'step-1'
+        mock_list_steps.assert_called_once_with(job_name)
+
+
+@pytest.mark.asyncio
+async def test_describe_inference_recommendations_job_sagemaker():
+    """Test the describe_inference_recommendations_job_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.describe_inference_recommendations_job'
+    ) as mock_describe_job:
+        job_name = 'test-job'
+        mock_describe_job.return_value = {
+            'JobName': job_name,
+            'Status': 'Completed',
+            'JobType': 'Default',
+            'CreationTime': '2023-01-01T00:00:00.000Z',
+        }
+
+        result = await describe_inference_recommendations_job_sagemaker(job_name=job_name)
+
+        assert 'job_details' in result
+        assert result['job_details']['JobName'] == job_name
+        assert result['job_details']['Status'] == 'Completed'
+        mock_describe_job.assert_called_once_with(job_name)
+
+
+@pytest.mark.asyncio
+async def test_stop_inference_recommendations_job_sagemaker():
+    """Test the stop_inference_recommendations_job_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.stop_inference_recommendations_job'
+    ) as mock_stop_job:
+        job_name = 'test-job'
+
+        result = await stop_inference_recommendations_job_sagemaker(job_name=job_name)
+
+        assert 'message' in result
+        assert f"Inference Recommender Job '{job_name}' stopped successfully" in result['message']
+        mock_stop_job.assert_called_once_with(job_name)

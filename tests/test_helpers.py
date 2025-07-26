@@ -16,6 +16,7 @@ from sagemaker_ai_mcp_server.helpers import (
     describe_domain,
     describe_endpoint,
     describe_endpoint_config,
+    describe_inference_recommendations_job,
     describe_mlflow_tracking_server,
     describe_model,
     describe_model_card,
@@ -32,6 +33,8 @@ from sagemaker_ai_mcp_server.helpers import (
     list_domains,
     list_endpoint_configs,
     list_endpoints,
+    list_inference_recommendations_job_steps,
+    list_inference_recommendations_jobs,
     list_mlflow_tracking_servers,
     list_model_card_export_jobs,
     list_model_card_versions,
@@ -48,6 +51,7 @@ from sagemaker_ai_mcp_server.helpers import (
     list_user_profiles,
     start_mlflow_tracking_server,
     start_pipeline_execution,
+    stop_inference_recommendations_job,
     stop_mlflow_tracking_server,
     stop_pipeline_execution,
     stop_processing_job,
@@ -967,3 +971,84 @@ class TestHelpers:
 
         mock_get_sagemaker_client.assert_called_once()
         mock_client.delete_model_card.assert_called_once_with(ModelCardName='test-card')
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_inference_recommendations_jobs(self, mock_get_sagemaker_client):
+        """Test listing of SageMaker Inference Recommender Jobs."""
+
+        mock_client = MagicMock()
+        mock_client.list_inference_recommendations_jobs.return_value = {
+            'InferenceRecommendationsJobs': [
+                {'JobName': 'test-job-1', 'Status': 'Completed'},
+                {'JobName': 'test-job-2', 'Status': 'InProgress'},
+            ]
+        }
+        mock_get_sagemaker_client.return_value = mock_client
+
+        result = await list_inference_recommendations_jobs()
+
+        assert len(result) == 2
+        assert result[0]['JobName'] == 'test-job-1'
+        assert result[1]['JobName'] == 'test-job-2'
+        mock_client.list_inference_recommendations_jobs.assert_called_once()
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_list_inference_recommendations_job_steps(self, mock_get_sagemaker_client):
+        """Test listing steps for a specific SageMaker Inference Recommender Job."""
+
+        job_name = 'test-job'
+        mock_client = MagicMock()
+        mock_client.list_inference_recommendations_job_steps.return_value = {
+            'Steps': [
+                {'StepName': 'step-1', 'Status': 'Completed'},
+                {'StepName': 'step-2', 'Status': 'InProgress'},
+            ]
+        }
+        mock_get_sagemaker_client.return_value = mock_client
+
+        result = await list_inference_recommendations_job_steps(job_name)
+
+        assert len(result) == 2
+        assert result[0]['StepName'] == 'step-1'
+        assert result[1]['StepName'] == 'step-2'
+        mock_client.list_inference_recommendations_job_steps.assert_called_once_with(
+            JobName=job_name
+        )
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_stop_inference_recommendations_job(self, mock_get_sagemaker_client):
+        """Test stopping a SageMaker Inference Recommender Job."""
+        job_name = 'test-job'
+        mock_client = MagicMock()
+        mock_get_sagemaker_client.return_value = mock_client
+
+        await stop_inference_recommendations_job(job_name)
+
+        mock_client.stop_inference_recommendations_job.assert_called_once_with(JobName=job_name)
+
+    @pytest.mark.asyncio
+    @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
+    async def test_describe_inference_recommendations_job(self, mock_get_sagemaker_client):
+        """Test describing a SageMaker Inference Recommender Job."""
+
+        job_name = 'test-job'
+        mock_client = MagicMock()
+        mock_client.describe_inference_recommendations_job.return_value = {
+            'JobName': job_name,
+            'Status': 'Completed',
+            'JobType': 'Default',
+            'CreationTime': '2023-01-01T00:00:00.000Z',
+        }
+        mock_get_sagemaker_client.return_value = mock_client
+
+        result = await describe_inference_recommendations_job(job_name)
+
+        assert result['JobName'] == job_name
+        assert result['Status'] == 'Completed'
+        assert result['JobType'] == 'Default'
+        mock_client.describe_inference_recommendations_job.assert_called_once_with(
+            JobName=job_name
+        )
