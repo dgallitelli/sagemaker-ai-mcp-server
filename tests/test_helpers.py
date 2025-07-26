@@ -976,7 +976,6 @@ class TestHelpers:
     @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
     async def test_list_inference_recommendations_jobs(self, mock_get_sagemaker_client):
         """Test listing of SageMaker Inference Recommender Jobs."""
-
         mock_client = MagicMock()
         mock_client.list_inference_recommendations_jobs.return_value = {
             'InferenceRecommendationsJobs': [
@@ -997,7 +996,6 @@ class TestHelpers:
     @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
     async def test_list_inference_recommendations_job_steps(self, mock_get_sagemaker_client):
         """Test listing steps for a specific SageMaker Inference Recommender Job."""
-
         job_name = 'test-job'
         mock_client = MagicMock()
         mock_client.list_inference_recommendations_job_steps.return_value = {
@@ -1033,7 +1031,6 @@ class TestHelpers:
     @patch('sagemaker_ai_mcp_server.helpers.get_sagemaker_client')
     async def test_describe_inference_recommendations_job(self, mock_get_sagemaker_client):
         """Test describing a SageMaker Inference Recommender Job."""
-
         job_name = 'test-job'
         mock_client = MagicMock()
         mock_client.describe_inference_recommendations_job.return_value = {

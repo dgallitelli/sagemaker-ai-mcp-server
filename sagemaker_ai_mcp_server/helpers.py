@@ -3,7 +3,7 @@
 import boto3
 import os
 from loguru import logger
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal
 
 
 # Helper Functions for the region, session and client creation
