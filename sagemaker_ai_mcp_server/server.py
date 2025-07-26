@@ -17,6 +17,7 @@ from sagemaker_ai_mcp_server.helpers import (
     describe_domain,
     describe_endpoint,
     describe_endpoint_config,
+    describe_inference_recommendations_job,
     describe_mlflow_tracking_server,
     describe_model,
     describe_model_card,
@@ -29,6 +30,8 @@ from sagemaker_ai_mcp_server.helpers import (
     list_domains,
     list_endpoint_configs,
     list_endpoints,
+    list_inference_recommendations_job_steps,
+    list_inference_recommendations_jobs,
     list_mlflow_tracking_servers,
     list_model_card_export_jobs,
     list_model_card_versions,
@@ -45,6 +48,7 @@ from sagemaker_ai_mcp_server.helpers import (
     list_user_profiles,
     start_mlflow_tracking_server,
     start_pipeline_execution,
+    stop_inference_recommendations_job,
     stop_mlflow_tracking_server,
     stop_pipeline_execution,
     stop_processing_job,
@@ -107,6 +111,10 @@ mcp = FastMCP(
     - Describe a Model Card Export Job in SageMaker
     - List Model Card Export Jobs in SageMaker
     - List Model Card Versions in SageMaker
+    - List Inference Recommender Jobs
+    - List Inference Recommender Job Steps
+    - Describe Inference Recommender Job
+    - Stop Inference Recommender Job
     Use these tools to manage your SageMaker resources effectively.
     """,
     dependencies=[
@@ -1861,6 +1869,165 @@ async def list_model_card_versions_sagemaker(
     except Exception as e:
         logger.error(f'Error listing model card versions for {model_card_name}: {e}')
         raise ValueError(f'Failed to list model card versions for {model_card_name}: {e}')
+
+
+@mcp.tool(
+    name='list_inference_recommendations_jobs_sagemaker',
+    description='List all SageMaker Inference Recommender Jobs',
+)
+async def list_inference_recommendations_jobs_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Inference Recommender Jobs.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Inference Recommender Jobs
+    in your account in the current region. This is typically used to see what
+    inference recommender jobs are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    jobs = await list_inference_recommendations_jobs_sagemaker()
+    print(jobs)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'inference_recommendations_jobs': A list of dictionaries, each representing
+      a SageMaker Inference Recommender Job with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Inference Recommender Jobs.
+    """
+    try:
+        jobs = await list_inference_recommendations_jobs()
+        return {'inference_recommendations_jobs': jobs}
+    except Exception as e:
+        logger.error(f'Error listing inference recommender jobs: {e}')
+        raise ValueError(f'Failed to list inference recommender jobs: {e}')
+
+
+@mcp.tool(
+    name='list_inference_recommendations_job_steps_sagemaker',
+    description='List steps for a SageMaker Inference Recommender Job',
+)
+async def list_inference_recommendations_job_steps_sagemaker(
+    job_name: Annotated[
+        str,
+        Field(description='The name of the SageMaker Inference Recommender Job to list steps for'),
+    ],
+) -> Dict[str, List]:
+    """List steps for a specific SageMaker Inference Recommender Job.
+
+    ## Usage
+
+    Use this tool to retrieve a list of steps for a specific SageMaker Inference
+    Recommender Job by providing its name. This helps you track the progress of the job.
+
+    ## Example
+
+    ```python
+    steps = await list_inference_recommendations_job_steps_sagemaker(job_name='my-inference-job')
+    print(steps)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'steps': A list of dictionaries, each representing a step in the SageMaker
+      Inference Recommender Job with its details.
+
+    ## Returns
+    A dictionary containing a list of steps for the specified Inference Recommender Job.
+    """
+    try:
+        steps = await list_inference_recommendations_job_steps(job_name)
+        return {'steps': steps}
+    except Exception as e:
+        logger.error(f'Error listing steps for inference recommender job {job_name}: {e}')
+        raise ValueError(f'Failed to list steps for inference recommender job {job_name}: {e}')
+
+
+@mcp.tool(
+    name='describe_inference_recommendations_job_sagemaker',
+    description='Describe a SageMaker Inference Recommender Job',
+)
+async def describe_inference_recommendations_job_sagemaker(
+    job_name: Annotated[
+        str, Field(description='The name of the SageMaker Inference Recommender Job to describe')
+    ],
+) -> Dict[str, Any]:
+    """Describe a specified SageMaker Inference Recommender Job.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker Inference
+    Recommender Job by providing its name. This returns comprehensive information
+    about the job's configuration, status, and other details.
+
+    ## Example
+
+    ```python
+    job_details = await describe_inference_recommendations_job_sagemaker(
+        job_name='my-inference-job'
+    )
+    print(job_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker
+    Inference Recommender Job.
+
+    ## Returns
+    A dictionary containing the job details.
+    """
+    try:
+        job_details = await describe_inference_recommendations_job(job_name)
+        return {'job_details': job_details}
+    except Exception as e:
+        logger.error(f'Error describing inference recommender job {job_name}: {e}')
+        raise ValueError(f'Failed to describe inference recommender job {job_name}: {e}')
+
+
+@mcp.tool(
+    name='stop_inference_recommendations_job_sagemaker',
+    description='Stop a SageMaker Inference Recommender Job',
+)
+async def stop_inference_recommendations_job_sagemaker(
+    job_name: Annotated[
+        str, Field(description='The name of the SageMaker Inference Recommender Job to stop')
+    ],
+) -> Dict[str, str]:
+    """Stop a specified SageMaker Inference Recommender Job.
+
+    ## Usage
+
+    Use this tool to stop a SageMaker Inference Recommender Job by providing its name.
+    This is useful for stopping jobs that are no longer needed or are consuming
+    too many resources.
+
+    ## Example
+
+    ```python
+    result = await stop_inference_recommendations_job_sagemaker(job_name='my-inference-job')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await stop_inference_recommendations_job(job_name)
+        return {'message': f"Inference Recommender Job '{job_name}' stopped successfully"}
+    except Exception as e:
+        logger.error(f'Error stopping inference recommender job {job_name}: {e}')
+        raise ValueError(f'Failed to stop inference recommender job {job_name}: {e}')
 
 
 def main():

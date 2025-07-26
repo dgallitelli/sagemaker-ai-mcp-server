@@ -751,3 +751,63 @@ async def list_model_card_versions(model_card_name: str) -> List[Dict[str, Any]]
     logger.info(f'Listing versions for Model Card: {model_card_name}')
     response = client.list_model_card_versions(ModelCardName=model_card_name)
     return response.get('ModelCardVersionSummaryList', [])
+
+
+# Helper Functions for SageMaker AI Inference Recommender Jobs
+
+
+async def list_inference_recommendations_jobs() -> List[Dict[str, Any]]:
+    """List all SageMaker Inference Recommender Jobs.
+
+    Returns:
+        List[Dict[str, Any]]: A list of SageMaker Inference Recommender Jobs.
+    """
+    client = get_sagemaker_client()
+    logger.info('Listing SageMaker Inference Recommender Jobs...')
+    response = client.list_inference_recommendations_jobs()
+    return response.get('InferenceRecommendationsJobs', [])
+
+
+async def list_inference_recommendations_job_steps(job_name: str) -> List[Dict[str, Any]]:
+    """List steps for a specific SageMaker Inference Recommender Job.
+
+    Args:
+        job_name (str): The name of the SageMaker Inference Recommender Job.
+
+    Returns:
+        List[Dict[str, Any]]: A list of steps for the specified Inference
+        Recommender Job.
+    """
+    client = get_sagemaker_client()
+    logger.info(f'Listing steps for Inference Recommender Job: {job_name}')
+    response = client.list_inference_recommendations_job_steps(JobName=job_name)
+    return response.get('Steps', [])
+
+
+async def stop_inference_recommendations_job(job_name: str) -> None:
+    """Stop a SageMaker Inference Recommender Job.
+
+    Args:
+        job_name (str): The name of the SageMaker Inference Recommender Job
+            to stop.
+    """
+    client = get_sagemaker_client()
+    logger.info(f'Stopping SageMaker Inference Recommender Job: {job_name}')
+    client.stop_inference_recommendations_job(JobName=job_name)
+    logger.info(f'Inference Recommender Job {job_name} stopped successfully.')
+
+
+async def describe_inference_recommendations_job(job_name: str) -> Dict[str, Any]:
+    """Describe a SageMaker Inference Recommender Job.
+
+    Args:
+        job_name (str): The name of the SageMaker Inference Recommender Job
+            to describe.
+
+    Returns:
+        Dict[str, Any]: The details of the specified Inference Recommender Job.
+    """
+    client = get_sagemaker_client()
+    logger.info(f'Describing SageMaker Inference Recommender Job: {job_name}')
+    response = client.describe_inference_recommendations_job(JobName=job_name)
+    return response
