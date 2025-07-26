@@ -6,6 +6,9 @@ from loguru import logger
 from typing import Any, Dict, List, Literal
 
 
+# Helper Functions for the region, session and client creation
+
+
 def get_region() -> str:
     """Get the AWS region from the environment variable or default to 'us-east-1'.
 
@@ -63,6 +66,9 @@ def get_sagemaker_execution_role_arn() -> str:
     if not role_arn:
         raise ValueError('SAGEMAKER_EXECUTION_ROLE_ARN environment variable is not set.')
     return role_arn
+
+
+# Helper Functions for SageMaker AI Endpoint Ops
 
 
 async def list_endpoints() -> List[Dict[str, Any]]:
@@ -141,6 +147,9 @@ async def describe_endpoint_config(endpoint_config_name: str) -> Dict[str, Any]:
     logger.info(f'Describing SageMaker Endpoint Config: {endpoint_config_name}')
     response = client.describe_endpoint_config(EndpointConfigName=endpoint_config_name)
     return response
+
+
+# Helper Functions for SageMaker AI Training, Processing, Transform Jobs
 
 
 async def list_training_jobs() -> List[Dict[str, Any]]:
@@ -250,6 +259,9 @@ async def stop_transform_job(transform_job_name: str) -> None:
     client = get_sagemaker_client()
     logger.info(f'Stopping SageMaker Transform Job: {transform_job_name}')
     client.stop_transform_job(TransformJobName=transform_job_name)
+
+
+# Helper Functions for SageMaker AI Pipeline Ops
 
 
 async def list_pipelines() -> List[Dict[str, Any]]:
@@ -412,6 +424,9 @@ async def stop_pipeline_execution(pipeline_execution_arn: str) -> None:
     logger.info(f'Pipeline Execution {pipeline_execution_arn} stopped successfully.')
 
 
+# Helper Functions for SageMaker AI MLflow Managed Tracking Server Ops
+
+
 async def create_mlflow_tracking_server(
     tracking_server_name: str,
     artifact_store_uri: str,
@@ -533,6 +548,9 @@ async def create_presigned_mlflow_tracking_server_url(
     return response.get('PresignedUrl', '')
 
 
+# Helper Functions for SageMaker AI Domain Ops
+
+
 async def delete_domain(domain_id: str) -> None:
     """Delete a SageMaker Domain.
 
@@ -597,6 +615,9 @@ async def create_presigned_domain_url(
     return response.get('AuthorizedUrl', '')
 
 
+# Helper Functions for SageMaker AI User Profile Ops
+
+
 async def list_user_profiles() -> List[Dict[str, Any]]:
     """List all user profiles in a SageMaker Domain.
 
@@ -619,6 +640,9 @@ async def list_spaces() -> List[Dict[str, Any]]:
     logger.info('Listing SageMaker Spaces...')
     response = client.list_spaces()
     return response.get('Spaces', [])
+
+
+# Helper Functions for SageMaker AI Model Ops
 
 
 async def describe_model(model_name: str) -> Dict[str, Any]:
@@ -658,3 +682,72 @@ async def list_models() -> List[Dict[str, Any]]:
     logger.info('Listing SageMaker Models...')
     response = client.list_models()
     return response.get('Models', [])
+
+
+# Helper Functions for SageMaker AI Model Cards
+
+
+async def describe_model_card(model_card_name: str) -> Dict[str, Any]:
+    """Describe a SageMaker Model Card.
+
+    Args:
+        model_card_name (str): The name of the SageMaker Model Card to describe.
+
+    Returns:
+        Dict[str, Any]: The details of the SageMaker Model Card.
+    """
+    client = get_sagemaker_client()
+    logger.info(f'Describing SageMaker Model Card: {model_card_name}')
+    response = client.describe_model_card(ModelCardName=model_card_name)
+    return response
+
+
+async def list_model_cards() -> List[Dict[str, Any]]:
+    """List all SageMaker Model Cards.
+
+    Returns:
+        List[Dict[str, Any]]: A list of SageMaker Model Cards.
+    """
+    client = get_sagemaker_client()
+    logger.info('Listing SageMaker Model Cards...')
+    response = client.list_model_cards()
+    return response.get('ModelCardSummaries', [])
+
+
+async def delete_model_card(model_card_name: str) -> None:
+    """Delete a SageMaker Model Card.
+
+    Args:
+        model_card_name (str): The name of the SageMaker Model Card to delete.
+    """
+    client = get_sagemaker_client()
+    logger.info(f'Deleting SageMaker Model Card: {model_card_name}')
+    client.delete_model_card(ModelCardName=model_card_name)
+    logger.info(f'Model Card {model_card_name} deleted successfully.')
+
+
+async def list_model_card_export_jobs() -> List[Dict[str, Any]]:
+    """List all SageMaker Model Card Export Jobs.
+
+    Returns:
+        List[Dict[str, Any]]: A list of SageMaker Model Card Export Jobs.
+    """
+    client = get_sagemaker_client()
+    logger.info('Listing SageMaker Model Card Export Jobs...')
+    response = client.list_model_card_export_jobs()
+    return response.get('ModelCardExportJobSummaries', [])
+
+
+async def list_model_card_versions(model_card_name: str) -> List[Dict[str, Any]]:
+    """List all versions of a SageMaker Model Card.
+
+    Args:
+        model_card_name (str): The name of the SageMaker Model Card.
+
+    Returns:
+        List[Dict[str, Any]]: A list of versions of the specified Model Card.
+    """
+    client = get_sagemaker_client()
+    logger.info(f'Listing versions for Model Card: {model_card_name}')
+    response = client.list_model_card_versions(ModelCardName=model_card_name)
+    return response.get('ModelCardVersionSummaryList', [])
