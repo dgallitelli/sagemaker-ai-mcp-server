@@ -4,9 +4,13 @@ from loguru import logger
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
 from sagemaker_ai_mcp_server.helpers import (
+    create_app,
     create_mlflow_tracking_server,
     create_presigned_domain_url,
     create_presigned_mlflow_tracking_server_url,
+    create_presigned_notebook_instance_url,
+    delete_app,
+    delete_app_image_config,
     delete_domain,
     delete_endpoint,
     delete_endpoint_config,
@@ -14,6 +18,8 @@ from sagemaker_ai_mcp_server.helpers import (
     delete_model,
     delete_model_card,
     delete_pipeline,
+    describe_app,
+    describe_app_image_config,
     describe_domain,
     describe_endpoint,
     describe_endpoint_config,
@@ -27,6 +33,7 @@ from sagemaker_ai_mcp_server.helpers import (
     describe_processing_job,
     describe_training_job,
     describe_transform_job,
+    list_apps,
     list_domains,
     list_endpoint_configs,
     list_endpoints,
@@ -115,6 +122,13 @@ mcp = FastMCP(
     - List Inference Recommender Job Steps
     - Describe Inference Recommender Job
     - Stop Inference Recommender Job
+    - Create a SageMaker App
+    - Delete a SageMaker App
+    - Describe a SageMaker App
+    - List SageMaker Apps
+    - Delete a SageMaker App Image Config
+    - Describe a SageMaker App Image Config
+    - Create a presigned URL for a SageMaker Notebook Instance
     Use these tools to manage your SageMaker resources effectively.
     """,
     dependencies=[
@@ -1129,10 +1143,10 @@ async def create_mlflow_tracking_server_sagemaker(
     A dictionary containing a success message.
     """
     try:
-        await create_mlflow_tracking_server(
+        tracking_server_arn = await create_mlflow_tracking_server(
             tracking_server_name, artifact_store_uri, tracking_server_size
         )
-        return {'message': f"MLflow Tracking Server '{tracking_server_name}' created successfully"}
+        return {'tracking_server_arn': tracking_server_arn}
     except Exception as e:
         logger.error(f'Error creating MLflow Tracking Server {tracking_server_name}: {e}')
         raise ValueError(f'Failed to create MLflow Tracking Server {tracking_server_name}: {e}')
@@ -2028,6 +2042,376 @@ async def stop_inference_recommendations_job_sagemaker(
     except Exception as e:
         logger.error(f'Error stopping inference recommender job {job_name}: {e}')
         raise ValueError(f'Failed to stop inference recommender job {job_name}: {e}')
+
+
+# Tools for SageMaker AI Apps Operations
+
+
+@mcp.tool(
+    name='create_app_sagemaker',
+    description='Create a SageMaker App',
+)
+async def create_app_sagemaker(
+    domain_id: Annotated[
+        str, Field(description='The ID of the domain in which to create the app')
+    ],
+    user_profile_name: Annotated[
+        str,
+        Field(description='The name of the user profile in which to create the app'),
+    ],
+    app_type: Annotated[
+        Literal[
+            'JupyterServer',
+            'KernelGateway',
+            'RStudioServerPro',
+            'RSessionGateway',
+            'Canvas',
+            'JupyterLab',
+            'CodeEditor',
+            'TensorBoard',
+            'DetailedProfiler',
+        ],
+        Field(description='The type of app to create'),
+    ],
+    app_name: Annotated[str, Field(description='The name of the app')],
+    resource_spec: Annotated[
+        Dict[str, Any],
+        Field(description='The resource specification for the app, optional'),
+    ] = {},
+) -> Dict[str, str]:
+    """Create a SageMaker App.
+
+    ## Usage
+
+    Use this tool to create a SageMaker App by providing the domain ID, user profile name,
+    app type, app name, and optional resource specifications.
+
+    ## Example
+
+    ```python
+    result = await create_app_sagemaker(
+        domain_id='d-1234567890',
+        user_profile_name='user1',
+        app_type='JupyterServer',
+        app_name='my-jupyter-app',
+    )
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing the ARN of the created app.
+
+    ## Returns
+    A dictionary containing the app ARN.
+    """
+    try:
+        resource_spec_param = resource_spec if resource_spec else None
+        app_arn = await create_app(
+            domain_id,
+            user_profile_name,
+            app_type,
+            app_name,
+            resource_spec_param,
+        )
+        return {'app_arn': app_arn}
+    except Exception as e:
+        logger.error(f'Error creating app {app_name}: {e}')
+        raise ValueError(f'Failed to create app {app_name}: {e}')
+
+
+@mcp.tool(
+    name='delete_app_sagemaker',
+    description='Delete a SageMaker App',
+)
+async def delete_app_sagemaker(
+    domain_id: Annotated[str, Field(description='The ID of the domain in which the app resides')],
+    user_profile_name: Annotated[
+        str,
+        Field(description='The name of the user profile that owns the app'),
+    ],
+    app_type: Annotated[
+        Literal[
+            'JupyterServer',
+            'KernelGateway',
+            'RStudioServerPro',
+            'RSessionGateway',
+            'Canvas',
+            'JupyterLab',
+            'CodeEditor',
+            'TensorBoard',
+            'DetailedProfiler',
+        ],
+        Field(description='The type of app to delete'),
+    ],
+    app_name: Annotated[str, Field(description='The name of the app to delete')],
+) -> Dict[str, str]:
+    """Delete a SageMaker App.
+
+    ## Usage
+
+    Use this tool to delete a SageMaker App by providing the domain ID, user profile name,
+    app type, and app name.
+
+    ## Example
+
+    ```python
+    result = await delete_app_sagemaker(
+        domain_id='d-1234567890',
+        user_profile_name='user1',
+        app_type='JupyterServer',
+        app_name='my-jupyter-app',
+    )
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await delete_app(
+            domain_id,
+            user_profile_name,
+            app_type,
+            app_name,
+        )
+        return {'message': f"App '{app_name}' deletion initiated successfully"}
+    except Exception as e:
+        logger.error(f'Error deleting app {app_name}: {e}')
+        raise ValueError(f'Failed to delete app {app_name}: {e}')
+
+
+@mcp.tool(
+    name='delete_app_image_config_sagemaker',
+    description='Delete a SageMaker App Image Config',
+)
+async def delete_app_image_config_sagemaker(
+    app_image_config_name: Annotated[
+        str, Field(description='The name of the SageMaker App Image Config to delete')
+    ],
+) -> Dict[str, str]:
+    """Delete a SageMaker App Image Config.
+
+    ## Usage
+
+    Use this tool to delete a SageMaker App Image Config by providing its name.
+
+    ## Example
+
+    ```python
+    result = await delete_app_image_config_sagemaker(app_image_config_name='my-app-image-config')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await delete_app_image_config(app_image_config_name)
+        return {'message': f"App Image Config '{app_image_config_name}' deleted successfully"}
+    except Exception as e:
+        logger.error(f'Error deleting app image config {app_image_config_name}: {e}')
+        raise ValueError(f'Failed to delete app image config {app_image_config_name}: {e}')
+
+
+@mcp.tool(
+    name='describe_app_sagemaker',
+    description='Describe a SageMaker App',
+)
+async def describe_app_sagemaker(
+    domain_id: Annotated[str, Field(description='The ID of the domain in which the app resides')],
+    user_profile_name: Annotated[
+        str,
+        Field(description='The name of the user profile that owns the app'),
+    ],
+    app_type: Annotated[
+        Literal[
+            'JupyterServer',
+            'KernelGateway',
+            'RStudioServerPro',
+            'RSessionGateway',
+            'Canvas',
+            'JupyterLab',
+            'CodeEditor',
+            'TensorBoard',
+            'DetailedProfiler',
+        ],
+        Field(description='The type of app'),
+    ],
+    app_name: Annotated[str, Field(description='The name of the app')],
+) -> Dict[str, Any]:
+    """Describe a SageMaker App.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker App by providing
+    the domain ID, user profile name, app type, and app name.
+
+    ## Example
+
+    ```python
+    app_details = await describe_app_sagemaker(
+        domain_id='d-1234567890',
+        user_profile_name='user1',
+        app_type='JupyterServer',
+        app_name='my-jupyter-app',
+    )
+    print(app_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker App.
+
+    ## Returns
+    A dictionary containing the app details.
+    """
+    try:
+        app_details = await describe_app(
+            domain_id,
+            user_profile_name,
+            app_type,
+            app_name,
+        )
+        return {'app_details': app_details}
+    except Exception as e:
+        logger.error(f'Error describing app {app_name}: {e}')
+        raise ValueError(f'Failed to describe app {app_name}: {e}')
+
+
+@mcp.tool(
+    name='describe_app_image_config_sagemaker',
+    description='Describe a SageMaker App Image Config',
+)
+async def describe_app_image_config_sagemaker(
+    app_image_config_name: Annotated[
+        str, Field(description='The name of the SageMaker App Image Config to describe')
+    ],
+) -> Dict[str, Any]:
+    """Describe a SageMaker App Image Config.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker App Image Config
+    by providing its name.
+
+    ## Example
+
+    ```python
+    config_details = await describe_app_image_config_sagemaker(
+        app_image_config_name='my-app-image-config'
+    )
+    print(config_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker App Image Config.
+
+    ## Returns
+    A dictionary containing the app image config details.
+    """
+    try:
+        config_details = await describe_app_image_config(app_image_config_name)
+        return {'app_image_config_details': config_details}
+    except Exception as e:
+        logger.error(f'Error describing app image config {app_image_config_name}: {e}')
+        raise ValueError(f'Failed to describe app image config {app_image_config_name}: {e}')
+
+
+@mcp.tool(
+    name='list_apps_sagemaker',
+    description='List all SageMaker Apps',
+)
+async def list_apps_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Apps.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Apps in your account
+    in the current region.
+
+    ## Example
+
+    ```python
+    apps = await list_apps_sagemaker()
+    print(apps)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'apps': A list of dictionaries, each representing a SageMaker App with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Apps.
+    """
+    try:
+        apps = await list_apps()
+        return {'apps': apps}
+    except Exception as e:
+        logger.error(f'Error listing apps: {e}')
+        raise ValueError(f'Failed to list apps: {e}')
+
+
+@mcp.tool(
+    name='create_presigned_notebook_instance_url_sagemaker',
+    description='Create a presigned URL for a SageMaker Notebook Instance',
+)
+async def create_presigned_notebook_instance_url_sagemaker(
+    notebook_instance_name: Annotated[
+        str, Field(description='The name of the SageMaker Notebook Instance')
+    ],
+    session_expiration_duration_in_seconds: Annotated[
+        int,
+        Field(description='The expiration time for the presigned URL in seconds'),
+    ] = 3600,
+) -> Dict[str, str]:
+    """Create a presigned URL for a SageMaker Notebook Instance.
+
+    ## Usage
+
+    Use this tool to create a presigned URL for accessing a SageMaker Notebook Instance
+    by providing its name and optional session expiration time.
+
+    ## Example
+
+    ```python
+    url = await create_presigned_notebook_instance_url_sagemaker(
+        notebook_instance_name='my-notebook-instance'
+    )
+    print(url)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'presigned_url': The presigned URL for the SageMaker Notebook Instance.
+
+    ## Returns
+    A dictionary containing the presigned URL.
+    """
+    try:
+        presigned_url = await create_presigned_notebook_instance_url(
+            notebook_instance_name,
+            session_expiration_duration_in_seconds,
+        )
+        return {'presigned_url': presigned_url}
+    except Exception as e:
+        logger.error(
+            f'Error creating presigned URL for notebook instance {notebook_instance_name}: {e}'
+        )
+        raise ValueError(
+            f'Failed to create presigned URL for notebook instance {notebook_instance_name}: {e}'
+        )
 
 
 def main():
