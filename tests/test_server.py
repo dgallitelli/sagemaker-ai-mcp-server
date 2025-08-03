@@ -52,8 +52,10 @@ from sagemaker_ai_mcp_server.server import (
     list_transform_jobs_sagemaker,
     list_user_profiles_sagemaker,
     start_mlflow_tracking_server_sagemaker,
+    start_pipeline_execution_sagemaker,
     stop_inference_recommendations_job_sagemaker,
     stop_mlflow_tracking_server_sagemaker,
+    stop_pipeline_execution_sagemaker,
     stop_processing_job_sagemaker,
     stop_training_job_sagemaker,
     stop_transform_job_sagemaker,
@@ -83,31 +85,6 @@ async def test_list_endpoint_configs_sagemaker():
 
         mock_list_configs.assert_called_once()
         assert result == {'endpoint_configs': [{'EndpointConfigName': 'test-config'}]}
-
-
-@pytest.mark.asyncio
-async def test_delete_endpoint_sagemaker():
-    """Test the delete_endpoint_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.delete_endpoint') as mock_delete_endpoint:
-        endpoint_name = 'test-endpoint'
-        result = await delete_endpoint_sagemaker(endpoint_name)
-
-        mock_delete_endpoint.assert_called_once_with(endpoint_name)
-        expected_msg = f"Endpoint '{endpoint_name}' deleted successfully"
-        assert result == {'message': expected_msg}
-
-
-@pytest.mark.asyncio
-async def test_delete_endpoint_config_sagemaker():
-    """Test the delete_endpoint_config_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.delete_endpoint_config') as mock_delete_config:
-        config_name = 'test-endpoint-config'
-
-        result = await delete_endpoint_config_sagemaker(config_name)
-
-        mock_delete_config.assert_called_once_with(config_name)
-        expected_msg = f"Endpoint Config '{config_name}' deleted successfully"
-        assert result == {'message': expected_msg}
 
 
 @pytest.mark.asyncio
@@ -147,21 +124,28 @@ async def test_describe_endpoint_config_sagemaker():
 
 
 @pytest.mark.asyncio
-async def test_describe_training_job_sagemaker():
-    """Test the describe_training_job_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.describe_training_job') as mock_describe_job:
-        job_name = 'test-training-job'
-        expected_result = {
-            'TrainingJobName': job_name,
-            'TrainingJobStatus': 'Completed',
-            'CreationTime': '2023-01-01T00:00:00',
-        }
-        mock_describe_job.return_value = expected_result
+async def test_delete_endpoint_sagemaker():
+    """Test the delete_endpoint_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.delete_endpoint') as mock_delete_endpoint:
+        endpoint_name = 'test-endpoint'
+        result = await delete_endpoint_sagemaker(endpoint_name)
 
-        result = await describe_training_job_sagemaker(job_name)
+        mock_delete_endpoint.assert_called_once_with(endpoint_name)
+        expected_msg = f"Endpoint '{endpoint_name}' deleted successfully"
+        assert result == {'message': expected_msg}
 
-        mock_describe_job.assert_called_once_with(job_name)
-        assert result == {'training_job_details': expected_result}
+
+@pytest.mark.asyncio
+async def test_delete_endpoint_config_sagemaker():
+    """Test the delete_endpoint_config_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.delete_endpoint_config') as mock_delete_config:
+        config_name = 'test-endpoint-config'
+
+        result = await delete_endpoint_config_sagemaker(config_name)
+
+        mock_delete_config.assert_called_once_with(config_name)
+        expected_msg = f"Endpoint Config '{config_name}' deleted successfully"
+        assert result == {'message': expected_msg}
 
 
 @pytest.mark.asyncio
@@ -179,18 +163,6 @@ async def test_list_training_jobs_sagemaker():
         assert result == {
             'training_jobs': [{'TrainingJobName': 'test-job-1'}, {'TrainingJobName': 'test-job-2'}]
         }
-
-
-@pytest.mark.asyncio
-async def test_stop_training_job_sagemaker():
-    """Test the stop_training_job_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.stop_training_job') as mock_stop_job:
-        job_name = 'test-training-job'
-        await stop_training_job_sagemaker(job_name)
-
-        mock_stop_job.assert_called_once_with(job_name)
-        expected_msg = f"Training job '{job_name}' stopped successfully"
-        assert {'message': expected_msg} == {'message': expected_msg}
 
 
 @pytest.mark.asyncio
@@ -214,38 +186,6 @@ async def test_list_processing_jobs_sagemaker():
 
 
 @pytest.mark.asyncio
-async def test_describe_processing_job_sagemaker():
-    """Test the describe_processing_job_sagemaker function."""
-    with patch(
-        'sagemaker_ai_mcp_server.server.describe_processing_job'
-    ) as mock_describe_processing:
-        job_name = 'test-processing-job'
-        expected_result = {
-            'ProcessingJobName': job_name,
-            'ProcessingJobStatus': 'Completed',
-            'CreationTime': '2023-01-01T00:00:00',
-        }
-        mock_describe_processing.return_value = expected_result
-
-        result = await describe_processing_job_sagemaker(job_name)
-
-        mock_describe_processing.assert_called_once_with(job_name)
-        assert result == {'processing_job_details': expected_result}
-
-
-@pytest.mark.asyncio
-async def test_stop_processing_job_sagemaker():
-    """Test the stop_processing_job_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.stop_processing_job') as mock_stop_processing:
-        job_name = 'test-processing-job'
-        await stop_processing_job_sagemaker(job_name)
-
-        mock_stop_processing.assert_called_once_with(job_name)
-        expected_msg = f"Processing job '{job_name}' stopped successfully"
-        assert {'message': expected_msg} == {'message': expected_msg}
-
-
-@pytest.mark.asyncio
 async def test_list_transform_jobs_sagemaker():
     """Test the list_transform_jobs_sagemaker function."""
     with patch('sagemaker_ai_mcp_server.server.list_transform_jobs') as mock_list_transform:
@@ -263,6 +203,83 @@ async def test_list_transform_jobs_sagemaker():
                 {'TransformJobName': 'test-transform-job-2'},
             ]
         }
+
+
+@pytest.mark.asyncio
+async def test_list_inference_recommendations_jobs_sagemaker():
+    """Test the list_inference_recommendations_jobs_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.list_inference_recommendations_jobs'
+    ) as mock_list_jobs:
+        mock_list_jobs.return_value = [
+            {'JobName': 'test-job-1', 'Status': 'Completed'},
+            {'JobName': 'test-job-2', 'Status': 'InProgress'},
+        ]
+
+        result = await list_inference_recommendations_jobs_sagemaker()
+
+        assert 'inference_recommendations_jobs' in result
+        assert len(result['inference_recommendations_jobs']) == 2
+        assert result['inference_recommendations_jobs'][0]['JobName'] == 'test-job-1'
+        mock_list_jobs.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_list_inference_recommendations_job_steps_sagemaker():
+    """Test the list_inference_recommendations_job_steps_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.list_inference_recommendations_job_steps'
+    ) as mock_list_steps:
+        job_name = 'test-job'
+        mock_list_steps.return_value = [
+            {'StepName': 'step-1', 'Status': 'Completed'},
+            {'StepName': 'step-2', 'Status': 'InProgress'},
+        ]
+
+        result = await list_inference_recommendations_job_steps_sagemaker(job_name=job_name)
+
+        assert 'steps' in result
+        assert len(result['steps']) == 2
+        assert result['steps'][0]['StepName'] == 'step-1'
+        mock_list_steps.assert_called_once_with(job_name)
+
+
+@pytest.mark.asyncio
+async def test_describe_training_job_sagemaker():
+    """Test the describe_training_job_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.describe_training_job') as mock_describe_job:
+        job_name = 'test-training-job'
+        expected_result = {
+            'TrainingJobName': job_name,
+            'TrainingJobStatus': 'Completed',
+            'CreationTime': '2023-01-01T00:00:00',
+        }
+        mock_describe_job.return_value = expected_result
+
+        result = await describe_training_job_sagemaker(job_name)
+
+        mock_describe_job.assert_called_once_with(job_name)
+        assert result == {'training_job_details': expected_result}
+
+
+@pytest.mark.asyncio
+async def test_describe_processing_job_sagemaker():
+    """Test the describe_processing_job_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.describe_processing_job'
+    ) as mock_describe_processing:
+        job_name = 'test-processing-job'
+        expected_result = {
+            'ProcessingJobName': job_name,
+            'ProcessingJobStatus': 'Completed',
+            'CreationTime': '2023-01-01T00:00:00',
+        }
+        mock_describe_processing.return_value = expected_result
+
+        result = await describe_processing_job_sagemaker(job_name)
+
+        mock_describe_processing.assert_called_once_with(job_name)
+        assert result == {'processing_job_details': expected_result}
 
 
 @pytest.mark.asyncio
@@ -284,6 +301,52 @@ async def test_describe_transform_job_sagemaker():
 
 
 @pytest.mark.asyncio
+async def test_describe_inference_recommendations_job_sagemaker():
+    """Test the describe_inference_recommendations_job_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.describe_inference_recommendations_job'
+    ) as mock_describe_job:
+        job_name = 'test-job'
+        mock_describe_job.return_value = {
+            'JobName': job_name,
+            'Status': 'Completed',
+            'JobType': 'Default',
+            'CreationTime': '2023-01-01T00:00:00.000Z',
+        }
+
+        result = await describe_inference_recommendations_job_sagemaker(job_name=job_name)
+
+        assert 'job_details' in result
+        assert result['job_details']['JobName'] == job_name
+        assert result['job_details']['Status'] == 'Completed'
+        mock_describe_job.assert_called_once_with(job_name)
+
+
+@pytest.mark.asyncio
+async def test_stop_training_job_sagemaker():
+    """Test the stop_training_job_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.stop_training_job') as mock_stop_job:
+        job_name = 'test-training-job'
+        await stop_training_job_sagemaker(job_name)
+
+        mock_stop_job.assert_called_once_with(job_name)
+        expected_msg = f"Training job '{job_name}' stopped successfully"
+        assert {'message': expected_msg} == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
+async def test_stop_processing_job_sagemaker():
+    """Test the stop_processing_job_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.stop_processing_job') as mock_stop_processing:
+        job_name = 'test-processing-job'
+        await stop_processing_job_sagemaker(job_name)
+
+        mock_stop_processing.assert_called_once_with(job_name)
+        expected_msg = f"Processing job '{job_name}' stopped successfully"
+        assert {'message': expected_msg} == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
 async def test_stop_transform_job_sagemaker():
     """Test the stop_transform_job_sagemaker function."""
     with patch('sagemaker_ai_mcp_server.server.stop_transform_job') as mock_stop_transform:
@@ -293,6 +356,41 @@ async def test_stop_transform_job_sagemaker():
         mock_stop_transform.assert_called_once_with(job_name)
         expected_msg = f"Transform job '{job_name}' stopped successfully"
         assert {'message': expected_msg} == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
+async def test_stop_inference_recommendations_job_sagemaker():
+    """Test the stop_inference_recommendations_job_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.stop_inference_recommendations_job'
+    ) as mock_stop_job:
+        job_name = 'test-job'
+
+        result = await stop_inference_recommendations_job_sagemaker(job_name=job_name)
+
+        assert 'message' in result
+        assert f"Inference Recommender Job '{job_name}' stopped successfully" in result['message']
+        mock_stop_job.assert_called_once_with(job_name)
+
+
+@pytest.mark.asyncio
+async def test_list_pipelines_sagemaker():
+    """Test the list_pipelines_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_pipelines') as mock_list_pipelines:
+        mock_list_pipelines.return_value = [
+            {'PipelineName': 'test-pipeline-1'},
+            {'PipelineName': 'test-pipeline-2'},
+        ]
+
+        result = await list_pipelines_sagemaker()
+
+        mock_list_pipelines.assert_called_once()
+        assert result == {
+            'pipelines': [
+                {'PipelineName': 'test-pipeline-1'},
+                {'PipelineName': 'test-pipeline-2'},
+            ]
+        }
 
 
 @pytest.mark.asyncio
@@ -366,26 +464,6 @@ async def test_list_pipeline_parameters_for_execution_sagemaker():
 
 
 @pytest.mark.asyncio
-async def test_list_pipelines_sagemaker():
-    """Test the list_pipelines_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.list_pipelines') as mock_list_pipelines:
-        mock_list_pipelines.return_value = [
-            {'PipelineName': 'test-pipeline-1'},
-            {'PipelineName': 'test-pipeline-2'},
-        ]
-
-        result = await list_pipelines_sagemaker()
-
-        mock_list_pipelines.assert_called_once()
-        assert result == {
-            'pipelines': [
-                {'PipelineName': 'test-pipeline-1'},
-                {'PipelineName': 'test-pipeline-2'},
-            ]
-        }
-
-
-@pytest.mark.asyncio
 async def test_describe_pipeline_sagemaker():
     """Test the describe_pipeline_sagemaker function."""
     with patch('sagemaker_ai_mcp_server.server.describe_pipeline') as mock_describe_pipeline:
@@ -401,18 +479,6 @@ async def test_describe_pipeline_sagemaker():
 
         mock_describe_pipeline.assert_called_once_with(pipeline_name)
         assert result == {'pipeline_details': expected_result}
-
-
-@pytest.mark.asyncio
-async def test_delete_pipeline_sagemaker():
-    """Test the delete_pipeline_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.delete_pipeline') as mock_delete_pipeline:
-        pipeline_name = 'test-pipeline'
-        await delete_pipeline_sagemaker(pipeline_name)
-
-        mock_delete_pipeline.assert_called_once_with(pipeline_name)
-        expected_msg = f"Pipeline '{pipeline_name}' deleted successfully"
-        assert {'message': expected_msg} == {'message': expected_msg}
 
 
 @pytest.mark.asyncio
@@ -454,41 +520,68 @@ async def test_describe_pipeline_execution_sagemaker():
 
 
 @pytest.mark.asyncio
-async def test_create_mlflow_tracking_server_sagemaker():
-    """Test the create_mlflow_tracking_server_sagemaker function."""
-    with patch(
-        'sagemaker_ai_mcp_server.server.create_mlflow_tracking_server'
-    ) as mock_create_server:
-        server_name = 'test-mlflow-server'
-        artifact_uri = 's3://test-bucket/artifacts'
-        server_size = 'Medium'
-        mock_create_server.return_value = (
-            'arn:aws:sagemaker:us-west-2:123456789012:mlflow-tracking-server/test-mlflow-server'
-        )
+async def test_start_pipeline_execution_sagemaker():
+    """Test the start_pipeline_execution_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.start_pipeline_execution') as mock_start_execution:
+        pipeline_name = 'test-pipeline'
+        parameters = {'param1': 'value1', 'param2': 'value2'}
+        execution_arn = f'arn:aws:sagemaker:us-west-2:123456789012:pipeline/{pipeline_name}/execution/test-execution'
+        mock_start_execution.return_value = execution_arn
 
-        result = await create_mlflow_tracking_server_sagemaker(
-            tracking_server_name=server_name,
-            artifact_store_uri=artifact_uri,
-            tracking_server_size=server_size,
-        )
+        result = await start_pipeline_execution_sagemaker(pipeline_name, parameters)
 
-        mock_create_server.assert_called_once_with(server_name, artifact_uri, server_size)
-        assert result == {'tracking_server_arn': mock_create_server.return_value}
+        mock_start_execution.assert_called_once_with(pipeline_name, parameters)
+        expected_msg = f"Pipeline '{pipeline_name}' started successfully with ARN: {execution_arn}"
+        assert result == {'message': expected_msg}
 
 
 @pytest.mark.asyncio
-async def test_delete_mlflow_tracking_server_sagemaker():
-    """Test the delete_mlflow_tracking_server_sagemaker function."""
-    with patch(
-        'sagemaker_ai_mcp_server.server.delete_mlflow_tracking_server'
-    ) as mock_delete_server:
-        server_name = 'test-mlflow-server'
-        msg = f"MLflow Tracking Server '{server_name}' deleted successfully"
+async def test_stop_pipeline_execution_sagemaker():
+    """Test the stop_pipeline_execution_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.stop_pipeline_execution') as mock_stop_execution:
+        execution_arn = 'arn:aws:sagemaker:us-west-2:123456789012:pipeline/test-pipeline/execution/test-execution'
 
-        result = await delete_mlflow_tracking_server_sagemaker(server_name)
+        result = await stop_pipeline_execution_sagemaker(execution_arn)
 
-        mock_delete_server.assert_called_once_with(server_name)
-        assert result == {'message': msg}
+        mock_stop_execution.assert_called_once_with(execution_arn)
+        expected_msg = f"Pipeline Execution '{execution_arn}' stopped successfully"
+        assert result == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
+async def test_delete_pipeline_sagemaker():
+    """Test the delete_pipeline_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.delete_pipeline') as mock_delete_pipeline:
+        pipeline_name = 'test-pipeline'
+        await delete_pipeline_sagemaker(pipeline_name)
+
+        mock_delete_pipeline.assert_called_once_with(pipeline_name)
+        expected_msg = f"Pipeline '{pipeline_name}' deleted successfully"
+        assert {'message': expected_msg} == {'message': expected_msg}
+
+
+@pytest.mark.asyncio
+async def test_list_user_profiles_sagemaker():
+    """Test the list_user_profiles_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_user_profiles') as mock_list_user_profiles:
+        mock_list_user_profiles.return_value = [{'UserProfileName': 'test-user-profile'}]
+
+        result = await list_user_profiles_sagemaker()
+
+        mock_list_user_profiles.assert_called_once()
+        assert result == {'user_profiles': [{'UserProfileName': 'test-user-profile'}]}
+
+
+@pytest.mark.asyncio
+async def test_list_spaces_sagemaker():
+    """Test the list_spaces_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_spaces') as mock_list_spaces:
+        mock_list_spaces.return_value = [{'SpaceName': 'test-space'}]
+
+        result = await list_spaces_sagemaker()
+
+        mock_list_spaces.assert_called_once()
+        assert result == {'spaces': [{'SpaceName': 'test-space'}]}
 
 
 @pytest.mark.asyncio
@@ -512,6 +605,47 @@ async def test_list_mlflow_tracking_servers_sagemaker():
 
 
 @pytest.mark.asyncio
+async def test_create_mlflow_tracking_server_sagemaker():
+    """Test the create_mlflow_tracking_server_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.create_mlflow_tracking_server'
+    ) as mock_create_server:
+        server_name = 'test-mlflow-server'
+        artifact_uri = 's3://test-bucket/artifacts'
+        server_size = 'Medium'
+        mock_create_server.return_value = (
+            'arn:aws:sagemaker:us-west-2:123456789012:mlflow-tracking-server/test-mlflow-server'
+        )
+
+        result = await create_mlflow_tracking_server_sagemaker(
+            tracking_server_name=server_name,
+            artifact_store_uri=artifact_uri,
+            tracking_server_size=server_size,
+        )
+
+        mock_create_server.assert_called_once_with(server_name, artifact_uri, server_size)
+        assert result == {'tracking_server_arn': mock_create_server.return_value}
+
+
+@pytest.mark.asyncio
+async def test_create_presigned_url_for_mlflow_tracking_server_sagemaker():
+    """Test the create_presigned_url function for MLflow tracking server."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.create_presigned_mlflow_tracking_server_url'
+    ) as mock_create_url:
+        server_name = 'test-mlflow-server'
+        expiration = 3600
+        url = 'https://test-presigned-url.aws.com'
+        mock_create_url.return_value = url
+
+        func = create_presigned_url_for_mlflow_tracking_server_sagemaker
+        result = await func(tracking_server_name=server_name, expiration_seconds=expiration)
+
+        mock_create_url.assert_called_once_with(server_name, expiration)
+        assert result == {'presigned_url': url}
+
+
+@pytest.mark.asyncio
 async def test_describe_mlflow_tracking_server_sagemaker():
     """Test the describe_mlflow_tracking_server_sagemaker function."""
     with patch(
@@ -532,24 +666,6 @@ async def test_describe_mlflow_tracking_server_sagemaker():
 
         mock_describe_server.assert_called_once_with(server_name)
         assert result == {'tracking_server_details': expected_result}
-
-
-@pytest.mark.asyncio
-async def test_create_presigned_url_for_mlflow_tracking_server_sagemaker():
-    """Test the create_presigned_url function for MLflow tracking server."""
-    with patch(
-        'sagemaker_ai_mcp_server.server.create_presigned_mlflow_tracking_server_url'
-    ) as mock_create_url:
-        server_name = 'test-mlflow-server'
-        expiration = 3600
-        url = 'https://test-presigned-url.aws.com'
-        mock_create_url.return_value = url
-
-        func = create_presigned_url_for_mlflow_tracking_server_sagemaker
-        result = await func(tracking_server_name=server_name, expiration_seconds=expiration)
-
-        mock_create_url.assert_called_once_with(server_name, expiration)
-        assert result == {'presigned_url': url}
 
 
 @pytest.mark.asyncio
@@ -579,15 +695,18 @@ async def test_stop_mlflow_tracking_server_sagemaker():
 
 
 @pytest.mark.asyncio
-async def test_delete_domain_sagemaker():
-    """Test the delete_domain_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.delete_domain') as mock_delete_domain:
-        domain_id = 'test-domain'
-        await delete_domain_sagemaker(domain_id)
+async def test_delete_mlflow_tracking_server_sagemaker():
+    """Test the delete_mlflow_tracking_server_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.delete_mlflow_tracking_server'
+    ) as mock_delete_server:
+        server_name = 'test-mlflow-server'
+        msg = f"MLflow Tracking Server '{server_name}' deleted successfully"
 
-        mock_delete_domain.assert_called_once_with(domain_id)
-        expected_msg = f"Domain '{domain_id}' deleted successfully"
-        assert {'message': expected_msg} == {'message': expected_msg}
+        result = await delete_mlflow_tracking_server_sagemaker(server_name)
+
+        mock_delete_server.assert_called_once_with(server_name)
+        assert result == {'message': msg}
 
 
 @pytest.mark.asyncio
@@ -600,24 +719,6 @@ async def test_list_domains_sagemaker():
 
         mock_list_domains.assert_called_once()
         assert result == {'domains': [{'DomainId': 'test-domain'}]}
-
-
-@pytest.mark.asyncio
-async def test_describe_domain_sagemaker():
-    """Test the describe_domain_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.describe_domain') as mock_describe_domain:
-        domain_id = 'test-domain'
-        expected_result = {
-            'DomainId': domain_id,
-            'DomainName': 'Test Domain',
-            'CreationTime': '2023-01-01T00:00:00',
-        }
-        mock_describe_domain.return_value = expected_result
-
-        result = await describe_domain_sagemaker(domain_id)
-
-        mock_describe_domain.assert_called_once_with(domain_id)
-        assert result == {'domain_details': expected_result}
 
 
 @pytest.mark.asyncio
@@ -639,27 +740,53 @@ async def test_create_presigned_url_for_domain_sagemaker():
 
 
 @pytest.mark.asyncio
-async def test_list_spaces_sagemaker():
-    """Test the list_spaces_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.list_spaces') as mock_list_spaces:
-        mock_list_spaces.return_value = [{'SpaceName': 'test-space'}]
+async def test_describe_domain_sagemaker():
+    """Test the describe_domain_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.describe_domain') as mock_describe_domain:
+        domain_id = 'test-domain'
+        expected_result = {
+            'DomainId': domain_id,
+            'DomainName': 'Test Domain',
+            'CreationTime': '2023-01-01T00:00:00',
+        }
+        mock_describe_domain.return_value = expected_result
 
-        result = await list_spaces_sagemaker()
+        result = await describe_domain_sagemaker(domain_id)
 
-        mock_list_spaces.assert_called_once()
-        assert result == {'spaces': [{'SpaceName': 'test-space'}]}
+        mock_describe_domain.assert_called_once_with(domain_id)
+        assert result == {'domain_details': expected_result}
 
 
 @pytest.mark.asyncio
-async def test_list_user_profiles_sagemaker():
-    """Test the list_user_profiles_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.list_user_profiles') as mock_list_user_profiles:
-        mock_list_user_profiles.return_value = [{'UserProfileName': 'test-user-profile'}]
+async def test_delete_domain_sagemaker():
+    """Test the delete_domain_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.delete_domain') as mock_delete_domain:
+        domain_id = 'test-domain'
+        await delete_domain_sagemaker(domain_id)
 
-        result = await list_user_profiles_sagemaker()
+        mock_delete_domain.assert_called_once_with(domain_id)
+        expected_msg = f"Domain '{domain_id}' deleted successfully"
+        assert {'message': expected_msg} == {'message': expected_msg}
 
-        mock_list_user_profiles.assert_called_once()
-        assert result == {'user_profiles': [{'UserProfileName': 'test-user-profile'}]}
+
+@pytest.mark.asyncio
+async def test_list_models_sagemaker():
+    """Test the list_models_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_models') as mock_list_models:
+        mock_list_models.return_value = [
+            {'ModelName': 'test-model-1'},
+            {'ModelName': 'test-model-2'},
+        ]
+
+        result = await list_models_sagemaker()
+
+        mock_list_models.assert_called_once()
+        assert result == {
+            'models': [
+                {'ModelName': 'test-model-1'},
+                {'ModelName': 'test-model-2'},
+            ]
+        }
 
 
 @pytest.mark.asyncio
@@ -693,38 +820,6 @@ async def test_delete_model_sagemaker():
 
 
 @pytest.mark.asyncio
-async def test_list_models_sagemaker():
-    """Test the list_models_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.list_models') as mock_list_models:
-        mock_list_models.return_value = [
-            {'ModelName': 'test-model-1'},
-            {'ModelName': 'test-model-2'},
-        ]
-
-        result = await list_models_sagemaker()
-
-        mock_list_models.assert_called_once()
-        assert result == {
-            'models': [
-                {'ModelName': 'test-model-1'},
-                {'ModelName': 'test-model-2'},
-            ]
-        }
-
-
-@pytest.mark.asyncio
-async def test_delete_model_card_sagemaker():
-    """Test the delete_model_card_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.delete_model_card') as mock_delete_model_card:
-        model_card_id = 'test-model-card'
-        await delete_model_card_sagemaker(model_card_id)
-
-        mock_delete_model_card.assert_called_once_with(model_card_id)
-        expected_msg = f"Model Card '{model_card_id}' deleted successfully"
-        assert {'message': expected_msg} == {'message': expected_msg}
-
-
-@pytest.mark.asyncio
 async def test_list_model_cards_sagemaker():
     """Test the list_model_cards_sagemaker function."""
     with patch('sagemaker_ai_mcp_server.server.list_model_cards') as mock_list_model_cards:
@@ -742,24 +837,6 @@ async def test_list_model_cards_sagemaker():
                 {'ModelCardId': 'test-model-card-2'},
             ]
         }
-
-
-@pytest.mark.asyncio
-async def test_describe_model_card_sagemaker():
-    """Test the describe_model_card_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.describe_model_card') as mock_describe_model_card:
-        model_card_id = 'test-model-card'
-        expected_result = {
-            'ModelCardId': model_card_id,
-            'ModelCardArn': f'arn:aws:sagemaker:us-west-2:123456789012:model-card/{model_card_id}',
-            'CreationTime': '2023-01-01T00:00:00',
-        }
-        mock_describe_model_card.return_value = expected_result
-
-        result = await describe_model_card_sagemaker(model_card_id)
-
-        mock_describe_model_card.assert_called_once_with(model_card_id)
-        assert result == {'model_card_details': expected_result}
 
 
 @pytest.mark.asyncio
@@ -805,79 +882,59 @@ async def test_list_model_card_versions_sagemaker():
 
 
 @pytest.mark.asyncio
-async def test_list_inference_recommendations_jobs_sagemaker():
-    """Test the list_inference_recommendations_jobs_sagemaker function."""
-    with patch(
-        'sagemaker_ai_mcp_server.server.list_inference_recommendations_jobs'
-    ) as mock_list_jobs:
-        mock_list_jobs.return_value = [
-            {'JobName': 'test-job-1', 'Status': 'Completed'},
-            {'JobName': 'test-job-2', 'Status': 'InProgress'},
-        ]
+async def test_delete_model_card_sagemaker():
+    """Test the delete_model_card_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.delete_model_card') as mock_delete_model_card:
+        model_card_id = 'test-model-card'
+        await delete_model_card_sagemaker(model_card_id)
 
-        result = await list_inference_recommendations_jobs_sagemaker()
-
-        assert 'inference_recommendations_jobs' in result
-        assert len(result['inference_recommendations_jobs']) == 2
-        assert result['inference_recommendations_jobs'][0]['JobName'] == 'test-job-1'
-        mock_list_jobs.assert_called_once()
+        mock_delete_model_card.assert_called_once_with(model_card_id)
+        expected_msg = f"Model Card '{model_card_id}' deleted successfully"
+        assert {'message': expected_msg} == {'message': expected_msg}
 
 
 @pytest.mark.asyncio
-async def test_list_inference_recommendations_job_steps_sagemaker():
-    """Test the list_inference_recommendations_job_steps_sagemaker function."""
-    with patch(
-        'sagemaker_ai_mcp_server.server.list_inference_recommendations_job_steps'
-    ) as mock_list_steps:
-        job_name = 'test-job'
-        mock_list_steps.return_value = [
-            {'StepName': 'step-1', 'Status': 'Completed'},
-            {'StepName': 'step-2', 'Status': 'InProgress'},
-        ]
-
-        result = await list_inference_recommendations_job_steps_sagemaker(job_name=job_name)
-
-        assert 'steps' in result
-        assert len(result['steps']) == 2
-        assert result['steps'][0]['StepName'] == 'step-1'
-        mock_list_steps.assert_called_once_with(job_name)
-
-
-@pytest.mark.asyncio
-async def test_describe_inference_recommendations_job_sagemaker():
-    """Test the describe_inference_recommendations_job_sagemaker function."""
-    with patch(
-        'sagemaker_ai_mcp_server.server.describe_inference_recommendations_job'
-    ) as mock_describe_job:
-        job_name = 'test-job'
-        mock_describe_job.return_value = {
-            'JobName': job_name,
-            'Status': 'Completed',
-            'JobType': 'Default',
-            'CreationTime': '2023-01-01T00:00:00.000Z',
+async def test_describe_model_card_sagemaker():
+    """Test the describe_model_card_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.describe_model_card') as mock_describe_model_card:
+        model_card_id = 'test-model-card'
+        expected_result = {
+            'ModelCardId': model_card_id,
+            'ModelCardArn': f'arn:aws:sagemaker:us-west-2:123456789012:model-card/{model_card_id}',
+            'CreationTime': '2023-01-01T00:00:00',
         }
+        mock_describe_model_card.return_value = expected_result
 
-        result = await describe_inference_recommendations_job_sagemaker(job_name=job_name)
+        result = await describe_model_card_sagemaker(model_card_id)
 
-        assert 'job_details' in result
-        assert result['job_details']['JobName'] == job_name
-        assert result['job_details']['Status'] == 'Completed'
-        mock_describe_job.assert_called_once_with(job_name)
+        mock_describe_model_card.assert_called_once_with(model_card_id)
+        assert result == {'model_card_details': expected_result}
 
 
 @pytest.mark.asyncio
-async def test_stop_inference_recommendations_job_sagemaker():
-    """Test the stop_inference_recommendations_job_sagemaker function."""
-    with patch(
-        'sagemaker_ai_mcp_server.server.stop_inference_recommendations_job'
-    ) as mock_stop_job:
-        job_name = 'test-job'
+async def test_list_apps_sagemaker():
+    """Test list_apps_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.list_apps') as mock_list_apps:
+        expected_result = [
+            {
+                'AppName': 'test-app-1',
+                'AppType': 'JupyterServer',
+                'DomainId': 'test-domain',
+                'UserProfileName': 'test-user',
+            },
+            {
+                'AppName': 'test-app-2',
+                'AppType': 'KernelGateway',
+                'DomainId': 'test-domain',
+                'UserProfileName': 'test-user',
+            },
+        ]
+        mock_list_apps.return_value = expected_result
 
-        result = await stop_inference_recommendations_job_sagemaker(job_name=job_name)
+        result = await list_apps_sagemaker()
 
-        assert 'message' in result
-        assert f"Inference Recommender Job '{job_name}' stopped successfully" in result['message']
-        mock_stop_job.assert_called_once_with(job_name)
+        mock_list_apps.assert_called_once()
+        assert result == {'apps': expected_result}
 
 
 @pytest.mark.asyncio
@@ -912,37 +969,23 @@ async def test_create_app_sagemaker():
 
 
 @pytest.mark.asyncio
-async def test_delete_app_sagemaker():
-    """Test delete_app_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.delete_app') as mock_delete_app:
-        domain_id = 'test-domain'
-        user_profile_name = 'test-user'
-        app_type = 'JupyterServer'
-        app_name = 'test-app'
+async def test_create_presigned_notebook_instance_url_sagemaker():
+    """Test create_presigned_notebook_instance_url_sagemaker function."""
+    with patch(
+        'sagemaker_ai_mcp_server.server.create_presigned_notebook_instance_url'
+    ) as mock_create_url:
+        notebook_name = 'test-notebook'
+        expiration = 7200
+        expected_url = 'https://example.com/presigned-notebook-url'
+        mock_create_url.return_value = expected_url
 
-        result = await delete_app_sagemaker(
-            domain_id=domain_id,
-            user_profile_name=user_profile_name,
-            app_type=app_type,
-            app_name=app_name,
+        result = await create_presigned_notebook_instance_url_sagemaker(
+            notebook_instance_name=notebook_name,
+            session_expiration_duration_in_seconds=expiration,
         )
 
-        mock_delete_app.assert_called_once_with(domain_id, user_profile_name, app_type, app_name)
-        expected_msg = f"App '{app_name}' deletion initiated successfully"
-        assert result == {'message': expected_msg}
-
-
-@pytest.mark.asyncio
-async def test_delete_app_image_config_sagemaker():
-    """Test delete_app_image_config_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.delete_app_image_config') as mock_delete_config:
-        config_name = 'test-app-image-config'
-
-        result = await delete_app_image_config_sagemaker(app_image_config_name=config_name)
-
-        mock_delete_config.assert_called_once_with(config_name)
-        expected_msg = f"App Image Config '{config_name}' deleted successfully"
-        assert result == {'message': expected_msg}
+        mock_create_url.assert_called_once_with(notebook_name, expiration)
+        assert result == {'presigned_url': expected_url}
 
 
 @pytest.mark.asyncio
@@ -991,46 +1034,34 @@ async def test_describe_app_image_config_sagemaker():
 
 
 @pytest.mark.asyncio
-async def test_list_apps_sagemaker():
-    """Test list_apps_sagemaker function."""
-    with patch('sagemaker_ai_mcp_server.server.list_apps') as mock_list_apps:
-        expected_result = [
-            {
-                'AppName': 'test-app-1',
-                'AppType': 'JupyterServer',
-                'DomainId': 'test-domain',
-                'UserProfileName': 'test-user',
-            },
-            {
-                'AppName': 'test-app-2',
-                'AppType': 'KernelGateway',
-                'DomainId': 'test-domain',
-                'UserProfileName': 'test-user',
-            },
-        ]
-        mock_list_apps.return_value = expected_result
+async def test_delete_app_sagemaker():
+    """Test delete_app_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.delete_app') as mock_delete_app:
+        domain_id = 'test-domain'
+        user_profile_name = 'test-user'
+        app_type = 'JupyterServer'
+        app_name = 'test-app'
 
-        result = await list_apps_sagemaker()
+        result = await delete_app_sagemaker(
+            domain_id=domain_id,
+            user_profile_name=user_profile_name,
+            app_type=app_type,
+            app_name=app_name,
+        )
 
-        mock_list_apps.assert_called_once()
-        assert result == {'apps': expected_result}
+        mock_delete_app.assert_called_once_with(domain_id, user_profile_name, app_type, app_name)
+        expected_msg = f"App '{app_name}' deletion initiated successfully"
+        assert result == {'message': expected_msg}
 
 
 @pytest.mark.asyncio
-async def test_create_presigned_notebook_instance_url_sagemaker():
-    """Test create_presigned_notebook_instance_url_sagemaker function."""
-    with patch(
-        'sagemaker_ai_mcp_server.server.create_presigned_notebook_instance_url'
-    ) as mock_create_url:
-        notebook_name = 'test-notebook'
-        expiration = 7200
-        expected_url = 'https://example.com/presigned-notebook-url'
-        mock_create_url.return_value = expected_url
+async def test_delete_app_image_config_sagemaker():
+    """Test delete_app_image_config_sagemaker function."""
+    with patch('sagemaker_ai_mcp_server.server.delete_app_image_config') as mock_delete_config:
+        config_name = 'test-app-image-config'
 
-        result = await create_presigned_notebook_instance_url_sagemaker(
-            notebook_instance_name=notebook_name,
-            session_expiration_duration_in_seconds=expiration,
-        )
+        result = await delete_app_image_config_sagemaker(app_image_config_name=config_name)
 
-        mock_create_url.assert_called_once_with(notebook_name, expiration)
-        assert result == {'presigned_url': expected_url}
+        mock_delete_config.assert_called_once_with(config_name)
+        expected_msg = f"App Image Config '{config_name}' deleted successfully"
+        assert result == {'message': expected_msg}

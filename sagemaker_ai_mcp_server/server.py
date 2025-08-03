@@ -3,140 +3,184 @@
 from loguru import logger
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
-from sagemaker_ai_mcp_server.helpers import (
+from sagemaker_ai_mcp_server.helpers.apps import (
     create_app,
-    create_mlflow_tracking_server,
-    create_presigned_domain_url,
-    create_presigned_mlflow_tracking_server_url,
     create_presigned_notebook_instance_url,
     delete_app,
     delete_app_image_config,
-    delete_domain,
-    delete_endpoint,
-    delete_endpoint_config,
-    delete_mlflow_tracking_server,
-    delete_model,
-    delete_model_card,
-    delete_pipeline,
     describe_app,
     describe_app_image_config,
+    list_apps,
+)
+from sagemaker_ai_mcp_server.helpers.domains import (
+    create_presigned_domain_url,
+    delete_domain,
     describe_domain,
+    list_domains,
+)
+from sagemaker_ai_mcp_server.helpers.endpoints import (
+    delete_endpoint,
+    delete_endpoint_config,
     describe_endpoint,
     describe_endpoint_config,
+    list_endpoint_configs,
+    list_endpoints,
+)
+from sagemaker_ai_mcp_server.helpers.jobs import (
     describe_inference_recommendations_job,
-    describe_mlflow_tracking_server,
-    describe_model,
-    describe_model_card,
-    describe_pipeline,
-    describe_pipeline_definition_for_execution,
-    describe_pipeline_execution,
     describe_processing_job,
     describe_training_job,
     describe_transform_job,
-    list_apps,
-    list_domains,
-    list_endpoint_configs,
-    list_endpoints,
     list_inference_recommendations_job_steps,
     list_inference_recommendations_jobs,
-    list_mlflow_tracking_servers,
-    list_model_card_export_jobs,
-    list_model_card_versions,
-    list_model_cards,
-    list_models,
-    list_pipeline_execution_steps,
-    list_pipeline_executions,
-    list_pipeline_parameters_for_execution,
-    list_pipelines,
     list_processing_jobs,
-    list_spaces,
     list_training_jobs,
     list_transform_jobs,
-    list_user_profiles,
-    start_mlflow_tracking_server,
-    start_pipeline_execution,
     stop_inference_recommendations_job,
-    stop_mlflow_tracking_server,
-    stop_pipeline_execution,
     stop_processing_job,
     stop_training_job,
     stop_transform_job,
 )
+from sagemaker_ai_mcp_server.helpers.mlflow_managed import (
+    create_mlflow_tracking_server,
+    create_presigned_mlflow_tracking_server_url,
+    delete_mlflow_tracking_server,
+    describe_mlflow_tracking_server,
+    list_mlflow_tracking_servers,
+    start_mlflow_tracking_server,
+    stop_mlflow_tracking_server,
+)
+from sagemaker_ai_mcp_server.helpers.model_cards import (
+    delete_model_card,
+    describe_model_card,
+    list_model_card_export_jobs,
+    list_model_card_versions,
+    list_model_cards,
+)
+from sagemaker_ai_mcp_server.helpers.models import delete_model, describe_model, list_models
+from sagemaker_ai_mcp_server.helpers.pipelines import (
+    delete_pipeline,
+    describe_pipeline,
+    describe_pipeline_definition_for_execution,
+    describe_pipeline_execution,
+    list_pipeline_execution_steps,
+    list_pipeline_executions,
+    list_pipeline_parameters_for_execution,
+    list_pipelines,
+    start_pipeline_execution,
+    stop_pipeline_execution,
+)
+from sagemaker_ai_mcp_server.helpers.profiles_spaces import list_spaces, list_user_profiles
 from typing import Annotated, Any, Dict, List, Literal
 
 
+SERVER_INSTRUCTIONS = """
+# SageMaker AI MCP Server
+
+SageMaker AI MCP Server provides tools to interact with Amazon SageMaker AI service.
+
+## IMPORTANT: Use the available tools to manage your SageMaker AI resources effectively, efficiently, and securely.
+
+## Features
+
+SageMaker AI MCP server has tools to manage SageMaker resources, including:
+- SageMaker AI Endpoints and Endpoint Configurations
+- SageMaker AI Jobs (Training Job, Processing Jobs, Transform Jobs, Inference Recommender Jobs)
+- SageMaker AI Pipelines
+- SageMaker AI User Profiles and Spaces
+- SageMaker AI Domains
+- SageMaker AI MLFlow Managed Tracking Servers
+- SageMaker AI Models
+- SageMaker AI Model Cards
+- SageMaker AI Apps
+
+## List of Tools for SageMaker AI Endpoints and Endpoint Configurations
+- list_endpoints_sagemaker (List all SageMaker AI Endpoints)
+- list_endpoint_configs_sagemaker (List all SageMaker AI Endpoint Configurations)
+- describe_endpoint_sagemaker (Describe a SageMaker AI Endpoint)
+- describe_endpoint_config_sagemaker (Describe a SageMaker AI Endpoint Configuration)
+- delete_endpoint_sagemaker (Delete a SageMaker AI Endpoint)
+- delete_endpoint_config_sagemaker (Delete a SageMaker AI Endpoint Configuration)
+
+## List of Tools for SageMaker AI Jobs
+- list_training_jobs_sagemaker (List all SageMaker AI Training Jobs)
+- list_processing_jobs_sagemaker (List all SageMaker AI Processing Jobs)
+- list_transform_jobs_sagemaker (List all SageMaker AI Transform Jobs)
+- list_inference_recommender_jobs_sagemaker (List all SageMaker AI Inference Recommender Jobs)
+- list_inference_recommender_job_steps_sagemaker (List all steps for a SageMaker AI Inference Recommender Job)
+- describe_training_job_sagemaker (Describe a SageMaker AI Training Job)
+- describe_processing_job_sagemaker (Describe a SageMaker AI Processing Job)
+- describe_transform_job_sagemaker (Describe a SageMaker AI Transform Job)
+- describe_inference_recommender_job_sagemaker (Describe a SageMaker AI Inference Recommender Job)
+- stop_training_job_sagemaker (Stop a SageMaker AI Training Job)
+- stop_processing_job_sagemaker (Stop a SageMaker AI Processing Job)
+- stop_transform_job_sagemaker (Stop a SageMaker AI Transform Job)
+- stop_inference_recommender_job_sagemaker (Stop a SageMaker AI Inference Recommender Job)
+
+## List of Tools for SageMaker AI Pipelines
+- list_pipelines_sagemaker (List all SageMaker AI Pipelines)
+- list_pipeline_executions_sagemaker (List all Pipeline Executions for a SageMaker AI Pipeline)
+- list_pipeline_execution_steps_sagemaker (List all steps for a SageMaker AI Pipeline Execution)
+- list_pipeline_parameters_for_execution_sagemaker (List all parameters for a SageMaker AI Pipeline Execution)
+- describe_pipeline_sagemaker (Describe a SageMaker AI Pipeline)
+- describe_pipeline_execution_sagemaker (Describe a SageMaker AI Pipeline Execution)
+- describe_pipeline_definition_for_execution_sagemaker (Describe a SageMaker AI Pipeline Definition for Execution)
+- start_pipeline_execution_sagemaker (Start a SageMaker AI Pipeline Execution)
+- stop_pipeline_execution_sagemaker (Stop a SageMaker AI Pipeline Execution)
+- delete_pipeline_sagemaker (Delete a SageMaker AI Pipeline)
+
+## List of Tools for SageMaker AI User Profiles and Spaces
+- list_user_profiles_sagemaker (List all SageMaker AI User Profiles)
+- list_spaces_sagemaker (List all SageMaker AI Spaces)
+
+## List of Tools for SageMaker AI MLflow Managed Tracking Servers
+- list_mlflow_tracking_servers_sagemaker (List all MLflow Tracking Servers)
+- create_mlflow_tracking_server_sagemaker (Create a new MLflow Tracking Server)
+- create_presigned_mlflow_tracking_server_url_sagemaker (Create a presigned URL for an MLflow Tracking Server)
+- describe_mlflow_tracking_server_sagemaker (Describe an MLflow Tracking Server)
+- start_mlflow_tracking_server_sagemaker (Start an MLflow Tracking Server)
+- stop_mlflow_tracking_server_sagemaker (Stop an MLflow Tracking Server)
+- delete_mlflow_tracking_server_sagemaker (Delete an MLflow Tracking Server)
+
+## List of Tools for SageMaker AI Domains
+- list_domains_sagemaker (List all SageMaker AI Domains)
+- create_presigned_domain_url_sagemaker (Create a presigned URL for a SageMaker Domain)
+- describe_domain_sagemaker (Describe a SageMaker AI Domain)
+- delete_domain_sagemaker (Delete a SageMaker AI Domain)
+
+## List of Tools for SageMaker AI Models
+- list_models_sagemaker (List all SageMaker AI Models)
+- describe_model_sagemaker (Describe a SageMaker AI Model)
+- delete_model_sagemaker (Delete a SageMaker AI Model)
+
+## List of Tools for SageMaker AI Model Cards
+- list_model_cards_sagemaker (List all SageMaker AI Model Cards)
+- list_model_card_export_jobs_sagemaker (List all SageMaker AI Model Card Export Jobs)
+- list_model_card_versions_sagemaker (List all versions of a SageMaker AI Model Card)
+- describe_model_card_sagemaker (Describe a SageMaker AI Model Card)
+- delete_model_card_sagemaker (Delete a SageMaker AI Model Card)
+
+## List of Tools for SageMaker AI Apps
+- list_apps_sagemaker (List all SageMaker AI Apps)
+- create_app_sagemaker (Create a SageMaker AI App)
+- create_presigned_notebook_instance_url_sagemaker (Create a presigned URL for a SageMaker Notebook Instance)
+- describe_app_sagemaker (Describe a SageMaker AI App)
+- describe_app_image_config_sagemaker (Describe a SageMaker AI App Image Config)
+- delete_app_sagemaker (Delete a SageMaker AI App)
+- delete_app_image_config_sagemaker (Delete a SageMaker AI App Image Config)
+"""
+
 mcp = FastMCP(
     'sagemaker-ai-mcp-server',
-    instructions="""
-    SageMaker AI MCP Server provides tools to interact with Amazon SageMaker AI
-    service.
-    The server enables you to:
-    - List SageMaker Endpoints
-    - List SageMaker Endpoint Configurations
-    - Delete SageMaker Endpoints
-    - Delete SageMaker Endpoint Configurations
-    - Describe SageMaker Endpoints
-    - Describe SageMaker Endpoint Configurations
-    - List SageMaker Training Jobs
-    - Describe SageMaker Training Jobs
-    - Stop SageMaker Training Jobs
-    - List SageMaker Processing Jobs
-    - Describe SageMaker Processing Jobs
-    - Stop SageMaker Processing Jobs
-    - List SageMaker Transform Jobs
-    - Describe SageMaker Transform Jobs
-    - Stop SageMaker Transform Jobs
-    - List SageMaker Pipelines
-    - Describe SageMaker Pipelines
-    - Delete SageMaker Pipelines
-    - List Pipeline Executions
-    - List Pipeline Execution Steps
-    - List Pipeline Parameters for Execution
-    - Describe Pipeline Definition for Execution
-    - Describe Pipeline Execution
-    - Start Pipeline Execution
-    - Stop Pipeline Execution
-    - Create an Managed MLflow Tracking Server in SageMaker
-    - Delete an Managed MLflow Tracking Server in SageMaker
-    - List Managed MLflow Tracking Servers in SageMaker
-    - Describe an Managed MLflow Tracking Server in SageMaker
-    - Start an Managed MLflow Tracking Server in SageMaker
-    - Stop an Managed MLflow Tracking Server in SageMaker
-    - Create a presigned URL for an Managed MLflow Tracking Server in SageMaker
-    - Delete a SageMaker Domain
-    - List SageMaker Domains
-    - Describe a SageMaker Domain
-    - Create a presigned URL for a SageMaker Domain
-    - List SageMaker Spaces
-    - List SageMaker User Profiles
-    - Describe a Model in SageMaker
-    - List Models in SageMaker
-    - Delete a Model in SageMaker
-    - Describe a Model Card in SageMaker
-    - List Model Cards in SageMaker
-    - Delete a Model Card in SageMaker
-    - Describe a Model Card Export Job in SageMaker
-    - List Model Card Export Jobs in SageMaker
-    - List Model Card Versions in SageMaker
-    - List Inference Recommender Jobs
-    - List Inference Recommender Job Steps
-    - Describe Inference Recommender Job
-    - Stop Inference Recommender Job
-    - Create a SageMaker App
-    - Delete a SageMaker App
-    - Describe a SageMaker App
-    - List SageMaker Apps
-    - Delete a SageMaker App Image Config
-    - Describe a SageMaker App Image Config
-    - Create a presigned URL for a SageMaker Notebook Instance
-    Use these tools to manage your SageMaker resources effectively.
-    """,
+    instructions=SERVER_INSTRUCTIONS,
     dependencies=[
         'pydantic',
         'loguru',
         'boto3',
     ],
 )
+
+# ---SageMaker Endpoints Tools---
 
 
 @mcp.tool(name='list_endpoints_sagemaker', description='List all SageMaker Endpoints')
@@ -208,81 +252,6 @@ async def list_endpoint_configs_sagemaker() -> Dict[str, List]:
     except Exception as e:
         logger.error(f'Error listing endpoint configurations: {e}')
         raise ValueError(f'Failed to list endpoint configs: {e}')
-
-
-@mcp.tool(name='delete_endpoint_sagemaker', description='Delete a SageMaker Endpoint')
-async def delete_endpoint_sagemaker(
-    endpoint_name: Annotated[
-        str, Field(description='The name of the SageMaker Endpoint to delete')
-    ],
-) -> Dict[str, str]:
-    """Delete a specified SageMaker Endpoint.
-
-    ## Usage
-
-    Use this tool to delete a SageMaker Endpoint by providing its name.
-    This is useful for cleaning up resources that are no longer needed.
-
-    ## Example
-
-    ```python
-    result = await delete_endpoint_sagemaker(endpoint_name='my-endpoint')
-    print(result)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with a success message.
-
-    ## Returns
-    A dictionary containing a success message.
-    """
-    try:
-        await delete_endpoint(endpoint_name)
-        return {'message': f"Endpoint '{endpoint_name}' deleted successfully"}
-    except Exception as e:
-        logger.error(f'Error deleting endpoint {endpoint_name}: {e}')
-        raise ValueError(f'Failed to delete endpoint {endpoint_name}: {e}')
-
-
-@mcp.tool(
-    name='delete_endpoint_config_sagemaker',
-    description='Delete a SageMaker Endpoint Configuration',
-)
-async def delete_endpoint_config_sagemaker(
-    endpoint_config_name: Annotated[
-        str, Field(description='The name of the SageMaker Endpoint Configuration to delete')
-    ],
-) -> Dict[str, str]:
-    """Delete a specified SageMaker Endpoint Configuration.
-
-    ## Usage
-
-    Use this tool to delete a SageMaker Endpoint Configuration by providing
-    its name. This is useful for cleaning up configurations that are no longer
-    needed.
-
-    ## Example
-
-    ```python
-    result = await delete_endpoint_config_sagemaker(endpoint_config_name='my-endpoint-config')
-    print(result)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with a success message.
-
-    ## Returns
-    A dictionary containing a success message.
-    """
-    try:
-        await delete_endpoint_config(endpoint_config_name)
-        msg = f"Endpoint Config '{endpoint_config_name}' deleted successfully"
-        return {'message': msg}
-    except Exception as e:
-        logger.error(f'Error deleting config {endpoint_config_name}: {e}')
-        raise ValueError(f'Failed to delete config {endpoint_config_name}: {e}')
 
 
 @mcp.tool(name='describe_endpoint_sagemaker', description='Describe a SageMaker Endpoint')
@@ -366,6 +335,84 @@ async def describe_endpoint_config_sagemaker(
         raise ValueError(err_msg)
 
 
+@mcp.tool(name='delete_endpoint_sagemaker', description='Delete a SageMaker Endpoint')
+async def delete_endpoint_sagemaker(
+    endpoint_name: Annotated[
+        str, Field(description='The name of the SageMaker Endpoint to delete')
+    ],
+) -> Dict[str, str]:
+    """Delete a specified SageMaker Endpoint.
+
+    ## Usage
+
+    Use this tool to delete a SageMaker Endpoint by providing its name.
+    This is useful for cleaning up resources that are no longer needed.
+
+    ## Example
+
+    ```python
+    result = await delete_endpoint_sagemaker(endpoint_name='my-endpoint')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await delete_endpoint(endpoint_name)
+        return {'message': f"Endpoint '{endpoint_name}' deleted successfully"}
+    except Exception as e:
+        logger.error(f'Error deleting endpoint {endpoint_name}: {e}')
+        raise ValueError(f'Failed to delete endpoint {endpoint_name}: {e}')
+
+
+@mcp.tool(
+    name='delete_endpoint_config_sagemaker',
+    description='Delete a SageMaker Endpoint Configuration',
+)
+async def delete_endpoint_config_sagemaker(
+    endpoint_config_name: Annotated[
+        str, Field(description='The name of the SageMaker Endpoint Configuration to delete')
+    ],
+) -> Dict[str, str]:
+    """Delete a specified SageMaker Endpoint Configuration.
+
+    ## Usage
+
+    Use this tool to delete a SageMaker Endpoint Configuration by providing
+    its name. This is useful for cleaning up configurations that are no longer
+    needed.
+
+    ## Example
+
+    ```python
+    result = await delete_endpoint_config_sagemaker(endpoint_config_name='my-endpoint-config')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await delete_endpoint_config(endpoint_config_name)
+        msg = f"Endpoint Config '{endpoint_config_name}' deleted successfully"
+        return {'message': msg}
+    except Exception as e:
+        logger.error(f'Error deleting config {endpoint_config_name}: {e}')
+        raise ValueError(f'Failed to delete config {endpoint_config_name}: {e}')
+
+
+# ---SageMaker Jobs Tools---
+
+
 @mcp.tool(name='list_training_jobs_sagemaker', description='List SageMaker Training Jobs')
 async def list_training_jobs_sagemaker() -> Dict[str, List]:
     """List all SageMaker Training Jobs.
@@ -398,6 +445,152 @@ async def list_training_jobs_sagemaker() -> Dict[str, List]:
     except Exception as e:
         logger.error(f'Error listing training jobs: {e}')
         raise ValueError(f'Failed to list training jobs: {e}')
+
+
+@mcp.tool(name='list_processing_jobs_sagemaker', description='List SageMaker Processing Jobs')
+async def list_processing_jobs_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Processing Jobs.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Processing Jobs in your
+    account in the current region. This is typically used to see what processing
+    jobs are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    jobs = await list_processing_jobs_sagemaker()
+    print(jobs)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'processing_jobs': A list of dictionaries, each representing a SageMaker
+      Processing Job with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Processing Jobs.
+    """
+    try:
+        jobs = await list_processing_jobs()
+        return {'processing_jobs': jobs}
+    except Exception as e:
+        logger.error(f'Error listing processing jobs: {e}')
+        raise ValueError(f'Failed to list processing jobs: {e}')
+
+
+@mcp.tool(name='list_transform_jobs_sagemaker', description='List SageMaker Transform Jobs')
+async def list_transform_jobs_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Transform Jobs.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Transform Jobs in your
+    account in the current region. This is typically used to see what transform
+    jobs are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    jobs = await list_transform_jobs_sagemaker()
+    print(jobs)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'transform_jobs': A list of dictionaries, each representing a SageMaker
+      Transform Job with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Transform Jobs.
+    """
+    try:
+        jobs = await list_transform_jobs()
+        return {'transform_jobs': jobs}
+    except Exception as e:
+        logger.error(f'Error listing transform jobs: {e}')
+        raise ValueError(f'Failed to list transform jobs: {e}')
+
+
+@mcp.tool(
+    name='list_inference_recommendations_jobs_sagemaker',
+    description='List all SageMaker Inference Recommender Jobs',
+)
+async def list_inference_recommendations_jobs_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Inference Recommender Jobs.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Inference Recommender Jobs
+    in your account in the current region. This is typically used to see what
+    inference recommender jobs are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    jobs = await list_inference_recommendations_jobs_sagemaker()
+    print(jobs)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'inference_recommendations_jobs': A list of dictionaries, each representing
+      a SageMaker Inference Recommender Job with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Inference Recommender Jobs.
+    """
+    try:
+        jobs = await list_inference_recommendations_jobs()
+        return {'inference_recommendations_jobs': jobs}
+    except Exception as e:
+        logger.error(f'Error listing inference recommender jobs: {e}')
+        raise ValueError(f'Failed to list inference recommender jobs: {e}')
+
+
+@mcp.tool(
+    name='list_inference_recommendations_job_steps_sagemaker',
+    description='List steps for a SageMaker Inference Recommender Job',
+)
+async def list_inference_recommendations_job_steps_sagemaker(
+    job_name: Annotated[
+        str,
+        Field(description='The name of the SageMaker Inference Recommender Job to list steps for'),
+    ],
+) -> Dict[str, List]:
+    """List steps for a specific SageMaker Inference Recommender Job.
+
+    ## Usage
+
+    Use this tool to retrieve a list of steps for a specific SageMaker Inference
+    Recommender Job by providing its name. This helps you track the progress of the job.
+
+    ## Example
+
+    ```python
+    steps = await list_inference_recommendations_job_steps_sagemaker(job_name='my-inference-job')
+    print(steps)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'steps': A list of dictionaries, each representing a step in the SageMaker
+      Inference Recommender Job with its details.
+
+    ## Returns
+    A dictionary containing a list of steps for the specified Inference Recommender Job.
+    """
+    try:
+        steps = await list_inference_recommendations_job_steps(job_name)
+        return {'steps': steps}
+    except Exception as e:
+        logger.error(f'Error listing steps for inference recommender job {job_name}: {e}')
+        raise ValueError(f'Failed to list steps for inference recommender job {job_name}: {e}')
 
 
 @mcp.tool(name='describe_training_job_sagemaker', description='Describe a SageMaker Training Job')
@@ -435,76 +628,6 @@ async def describe_training_job_sagemaker(
     except Exception as e:
         logger.error(f'Error describing training job {training_job_name}: {e}')
         raise ValueError(f'Failed to describe training job {training_job_name}: {e}')
-
-
-@mcp.tool(name='stop_training_job_sagemaker', description='Stop a SageMaker Training Job')
-async def stop_training_job_sagemaker(
-    training_job_name: Annotated[
-        str, Field(description='The name of the SageMaker Training Job to stop')
-    ],
-) -> Dict[str, str]:
-    """Stop a specified SageMaker Training Job.
-
-    ## Usage
-
-    Use this tool to stop a SageMaker Training Job by providing its name.
-    This is useful for terminating jobs that are no longer needed or are taking
-    too long to complete.
-
-    ## Example
-
-    ```python
-    result = await stop_training_job_sagemaker(training_job_name='my-training-job')
-    print(result)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with a success message.
-
-    ## Returns
-    A dictionary containing a success message.
-    """
-    try:
-        await stop_training_job(training_job_name)
-        return {'message': f"Training Job '{training_job_name}' stopped successfully"}
-    except Exception as e:
-        logger.error(f'Error stopping training job {training_job_name}: {e}')
-        raise ValueError(f'Failed to stop training job {training_job_name}: {e}')
-
-
-@mcp.tool(name='list_processing_jobs_sagemaker', description='List SageMaker Processing Jobs')
-async def list_processing_jobs_sagemaker() -> Dict[str, List]:
-    """List all SageMaker Processing Jobs.
-
-    ## Usage
-
-    Use this tool to retrieve a list of all SageMaker Processing Jobs in your
-    account in the current region. This is typically used to see what processing
-    jobs are available before performing operations on them.
-
-    ## Example
-
-    ```python
-    jobs = await list_processing_jobs_sagemaker()
-    print(jobs)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with the following structure:
-    - 'processing_jobs': A list of dictionaries, each representing a SageMaker
-      Processing Job with its details.
-
-    ## Returns
-    A dictionary containing a list of SageMaker Processing Jobs.
-    """
-    try:
-        jobs = await list_processing_jobs()
-        return {'processing_jobs': jobs}
-    except Exception as e:
-        logger.error(f'Error listing processing jobs: {e}')
-        raise ValueError(f'Failed to list processing jobs: {e}')
 
 
 @mcp.tool(
@@ -546,76 +669,6 @@ async def describe_processing_job_sagemaker(
         raise ValueError(f'Failed to describe processing job {processing_job_name}: {e}')
 
 
-@mcp.tool(name='stop_processing_job_sagemaker', description='Stop a SageMaker Processing Job')
-async def stop_processing_job_sagemaker(
-    processing_job_name: Annotated[
-        str, Field(description='The name of the SageMaker Processing Job to stop')
-    ],
-) -> Dict[str, str]:
-    """Stop a specified SageMaker Processing Job.
-
-    ## Usage
-
-    Use this tool to stop a SageMaker Processing Job by providing its name.
-    This is useful for terminating jobs that are no longer needed or are taking
-    too long to complete.
-
-    ## Example
-
-    ```python
-    result = await stop_processing_job_sagemaker(processing_job_name='my-processing-job')
-    print(result)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with a success message.
-
-    ## Returns
-    A dictionary containing a success message.
-    """
-    try:
-        await stop_processing_job(processing_job_name)
-        return {'message': f"Processing Job '{processing_job_name}' stopped successfully"}
-    except Exception as e:
-        logger.error(f'Error stopping processing job {processing_job_name}: {e}')
-        raise ValueError(f'Failed to stop processing job {processing_job_name}: {e}')
-
-
-@mcp.tool(name='list_transform_jobs_sagemaker', description='List SageMaker Transform Jobs')
-async def list_transform_jobs_sagemaker() -> Dict[str, List]:
-    """List all SageMaker Transform Jobs.
-
-    ## Usage
-
-    Use this tool to retrieve a list of all SageMaker Transform Jobs in your
-    account in the current region. This is typically used to see what transform
-    jobs are available before performing operations on them.
-
-    ## Example
-
-    ```python
-    jobs = await list_transform_jobs_sagemaker()
-    print(jobs)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with the following structure:
-    - 'transform_jobs': A list of dictionaries, each representing a SageMaker
-      Transform Job with its details.
-
-    ## Returns
-    A dictionary containing a list of SageMaker Transform Jobs.
-    """
-    try:
-        jobs = await list_transform_jobs()
-        return {'transform_jobs': jobs}
-    except Exception as e:
-        logger.error(f'Error listing transform jobs: {e}')
-        raise ValueError(f'Failed to list transform jobs: {e}')
-
-
 @mcp.tool(
     name='describe_transform_job_sagemaker', description='Describe a SageMaker Transform Job'
 )
@@ -655,6 +708,120 @@ async def describe_transform_job_sagemaker(
         raise ValueError(f'Failed to describe transform job {transform_job_name}: {e}')
 
 
+@mcp.tool(
+    name='describe_inference_recommendations_job_sagemaker',
+    description='Describe a SageMaker Inference Recommender Job',
+)
+async def describe_inference_recommendations_job_sagemaker(
+    job_name: Annotated[
+        str, Field(description='The name of the SageMaker Inference Recommender Job to describe')
+    ],
+) -> Dict[str, Any]:
+    """Describe a specified SageMaker Inference Recommender Job.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker Inference
+    Recommender Job by providing its name. This returns comprehensive information
+    about the job's configuration, status, and other details.
+
+    ## Example
+
+    ```python
+    job_details = await describe_inference_recommendations_job_sagemaker(
+        job_name='my-inference-job'
+    )
+    print(job_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker
+    Inference Recommender Job.
+
+    ## Returns
+    A dictionary containing the job details.
+    """
+    try:
+        job_details = await describe_inference_recommendations_job(job_name)
+        return {'job_details': job_details}
+    except Exception as e:
+        logger.error(f'Error describing inference recommender job {job_name}: {e}')
+        raise ValueError(f'Failed to describe inference recommender job {job_name}: {e}')
+
+
+@mcp.tool(name='stop_training_job_sagemaker', description='Stop a SageMaker Training Job')
+async def stop_training_job_sagemaker(
+    training_job_name: Annotated[
+        str, Field(description='The name of the SageMaker Training Job to stop')
+    ],
+) -> Dict[str, str]:
+    """Stop a specified SageMaker Training Job.
+
+    ## Usage
+
+    Use this tool to stop a SageMaker Training Job by providing its name.
+    This is useful for terminating jobs that are no longer needed or are taking
+    too long to complete.
+
+    ## Example
+
+    ```python
+    result = await stop_training_job_sagemaker(training_job_name='my-training-job')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await stop_training_job(training_job_name)
+        return {'message': f"Training Job '{training_job_name}' stopped successfully"}
+    except Exception as e:
+        logger.error(f'Error stopping training job {training_job_name}: {e}')
+        raise ValueError(f'Failed to stop training job {training_job_name}: {e}')
+
+
+@mcp.tool(name='stop_processing_job_sagemaker', description='Stop a SageMaker Processing Job')
+async def stop_processing_job_sagemaker(
+    processing_job_name: Annotated[
+        str, Field(description='The name of the SageMaker Processing Job to stop')
+    ],
+) -> Dict[str, str]:
+    """Stop a specified SageMaker Processing Job.
+
+    ## Usage
+
+    Use this tool to stop a SageMaker Processing Job by providing its name.
+    This is useful for terminating jobs that are no longer needed or are taking
+    too long to complete.
+
+    ## Example
+
+    ```python
+    result = await stop_processing_job_sagemaker(processing_job_name='my-processing-job')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await stop_processing_job(processing_job_name)
+        return {'message': f"Processing Job '{processing_job_name}' stopped successfully"}
+    except Exception as e:
+        logger.error(f'Error stopping processing job {processing_job_name}: {e}')
+        raise ValueError(f'Failed to stop processing job {processing_job_name}: {e}')
+
+
 @mcp.tool(name='stop_transform_job_sagemaker', description='Stop a SageMaker Transform Job')
 async def stop_transform_job_sagemaker(
     transform_job_name: Annotated[
@@ -691,6 +858,48 @@ async def stop_transform_job_sagemaker(
         raise ValueError(f'Failed to stop transform job {transform_job_name}: {e}')
 
 
+@mcp.tool(
+    name='stop_inference_recommendations_job_sagemaker',
+    description='Stop a SageMaker Inference Recommender Job',
+)
+async def stop_inference_recommendations_job_sagemaker(
+    job_name: Annotated[
+        str, Field(description='The name of the SageMaker Inference Recommender Job to stop')
+    ],
+) -> Dict[str, str]:
+    """Stop a specified SageMaker Inference Recommender Job.
+
+    ## Usage
+
+    Use this tool to stop a SageMaker Inference Recommender Job by providing its name.
+    This is useful for stopping jobs that are no longer needed or are consuming
+    too many resources.
+
+    ## Example
+
+    ```python
+    result = await stop_inference_recommendations_job_sagemaker(job_name='my-inference-job')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await stop_inference_recommendations_job(job_name)
+        return {'message': f"Inference Recommender Job '{job_name}' stopped successfully"}
+    except Exception as e:
+        logger.error(f'Error stopping inference recommender job {job_name}: {e}')
+        raise ValueError(f'Failed to stop inference recommender job {job_name}: {e}')
+
+
+# ---SageMaker Pipelines Tools---
+
+
 @mcp.tool(name='list_pipelines_sagemaker', description='List SageMaker Pipelines')
 async def list_pipelines_sagemaker() -> Dict[str, List]:
     """List all SageMaker Pipelines.
@@ -723,78 +932,6 @@ async def list_pipelines_sagemaker() -> Dict[str, List]:
     except Exception as e:
         logger.error(f'Error listing pipelines: {e}')
         raise ValueError(f'Failed to list pipelines: {e}')
-
-
-@mcp.tool(name='describe_pipeline_sagemaker', description='Describe a SageMaker Pipeline')
-async def describe_pipeline_sagemaker(
-    pipeline_name: Annotated[
-        str, Field(description='The name of the SageMaker Pipeline to describe')
-    ],
-) -> Dict[str, Any]:
-    """Describe a specified SageMaker Pipeline.
-
-    ## Usage
-
-    Use this tool to get detailed information about a SageMaker Pipeline by
-    providing its name. This returns comprehensive information about the
-    pipeline's configuration, status, and other details.
-
-    ## Example
-
-    ```python
-    pipeline_details = await describe_pipeline_sagemaker(pipeline_name='my-pipeline')
-    print(pipeline_details)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary containing all the details of the SageMaker
-    Pipeline.
-
-    ## Returns
-    A dictionary containing the pipeline details.
-    """
-    try:
-        pipeline_details = await describe_pipeline(pipeline_name)
-        return {'pipeline_details': pipeline_details}
-    except Exception as e:
-        logger.error(f'Error describing pipeline {pipeline_name}: {e}')
-        raise ValueError(f'Failed to describe pipeline {pipeline_name}: {e}')
-
-
-@mcp.tool(name='delete_pipeline_sagemaker', description='Delete a SageMaker Pipeline')
-async def delete_pipeline_sagemaker(
-    pipeline_name: Annotated[
-        str, Field(description='The name of the SageMaker Pipeline to delete')
-    ],
-) -> Dict[str, str]:
-    """Delete a specified SageMaker Pipeline.
-
-    ## Usage
-
-    Use this tool to delete a SageMaker Pipeline by providing its name.
-    This is useful for cleaning up pipelines that are no longer needed.
-
-    ## Example
-
-    ```python
-    result = await delete_pipeline_sagemaker(pipeline_name='my-pipeline')
-    print(result)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with a success message.
-
-    ## Returns
-    A dictionary containing a success message.
-    """
-    try:
-        await delete_pipeline(pipeline_name)
-        return {'message': f"Pipeline '{pipeline_name}' deleted successfully"}
-    except Exception as e:
-        logger.error(f'Error deleting pipeline {pipeline_name}: {e}')
-        raise ValueError(f'Failed to delete pipeline {pipeline_name}: {e}')
 
 
 @mcp.tool(
@@ -925,6 +1062,43 @@ async def list_pipeline_parameters_for_execution_sagemaker(
     except Exception as e:
         logger.error(f'Error listing pipeline parameters for {pipeline_execution_arn}: {e}')
         raise ValueError(f'Failed to list pipeline parameters for {pipeline_execution_arn}: {e}')
+
+
+@mcp.tool(name='describe_pipeline_sagemaker', description='Describe a SageMaker Pipeline')
+async def describe_pipeline_sagemaker(
+    pipeline_name: Annotated[
+        str, Field(description='The name of the SageMaker Pipeline to describe')
+    ],
+) -> Dict[str, Any]:
+    """Describe a specified SageMaker Pipeline.
+
+    ## Usage
+
+    Use this tool to get detailed information about a SageMaker Pipeline by
+    providing its name. This returns comprehensive information about the
+    pipeline's configuration, status, and other details.
+
+    ## Example
+
+    ```python
+    pipeline_details = await describe_pipeline_sagemaker(pipeline_name='my-pipeline')
+    print(pipeline_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker
+    Pipeline.
+
+    ## Returns
+    A dictionary containing the pipeline details.
+    """
+    try:
+        pipeline_details = await describe_pipeline(pipeline_name)
+        return {'pipeline_details': pipeline_details}
+    except Exception as e:
+        logger.error(f'Error describing pipeline {pipeline_name}: {e}')
+        raise ValueError(f'Failed to describe pipeline {pipeline_name}: {e}')
 
 
 @mcp.tool(
@@ -1100,6 +1274,146 @@ async def stop_pipeline_execution_sagemaker(
         raise ValueError(f'Failed to stop pipeline execution {pipeline_execution_arn}: {e}')
 
 
+@mcp.tool(name='delete_pipeline_sagemaker', description='Delete a SageMaker Pipeline')
+async def delete_pipeline_sagemaker(
+    pipeline_name: Annotated[
+        str, Field(description='The name of the SageMaker Pipeline to delete')
+    ],
+) -> Dict[str, str]:
+    """Delete a specified SageMaker Pipeline.
+
+    ## Usage
+
+    Use this tool to delete a SageMaker Pipeline by providing its name.
+    This is useful for cleaning up pipelines that are no longer needed.
+
+    ## Example
+
+    ```python
+    result = await delete_pipeline_sagemaker(pipeline_name='my-pipeline')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await delete_pipeline(pipeline_name)
+        return {'message': f"Pipeline '{pipeline_name}' deleted successfully"}
+    except Exception as e:
+        logger.error(f'Error deleting pipeline {pipeline_name}: {e}')
+        raise ValueError(f'Failed to delete pipeline {pipeline_name}: {e}')
+
+
+# ---SageMaker Profiles and Spaces Tools---
+
+
+@mcp.tool(name='list_user_profiles_sagemaker', description='List all SageMaker User Profiles')
+async def list_user_profiles_sagemaker() -> Dict[str, List]:
+    """List all SageMaker User Profiles.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker User Profiles in your account in the current region.
+    This is typically used to see what user profiles are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    user_profiles = await list_user_profiles_sagemaker()
+    print(user_profiles)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'user_profiles': A list of dictionaries, each representing a SageMaker User Profile with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker User Profiles.
+    """
+    try:
+        user_profiles = await list_user_profiles()
+        return {'user_profiles': user_profiles}
+    except Exception as e:
+        logger.error(f'Error listing user profiles: {e}')
+        raise ValueError(f'Failed to list user profiles: {e}')
+
+
+@mcp.tool(name='list_spaces_sagemaker', description='List all SageMaker Spaces')
+async def list_spaces_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Spaces.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Spaces in your account in the current region.
+    This is typically used to see what spaces are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    spaces = await list_spaces_sagemaker()
+    print(spaces)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'spaces': A list of dictionaries, each representing a SageMaker Space with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Spaces.
+    """
+    try:
+        spaces = await list_spaces()
+        return {'spaces': spaces}
+    except Exception as e:
+        logger.error(f'Error listing spaces: {e}')
+        raise ValueError(f'Failed to list spaces: {e}')
+
+
+# ---SageMaker MLflow Managed Tracking Server Tools---
+
+
+@mcp.tool(
+    name='list_mlflow_tracking_servers_sagemaker',
+    description='List all Managed MLflow Tracking Servers in SageMaker',
+)
+async def list_mlflow_tracking_servers_sagemaker() -> Dict[str, List]:
+    """List all Managed MLflow Tracking Servers in SageMaker.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all managed MLflow Tracking Servers in your
+    SageMaker account. This is useful for seeing what tracking servers are available.
+
+    ## Example
+
+    ```python
+    servers = await list_mlflow_tracking_servers_sagemaker()
+    print(servers)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'tracking_servers': A list of dictionaries, each representing a managed MLflow Tracking Server.
+
+    ## Returns
+    A dictionary containing a list of MLflow Tracking Servers.
+    """
+    try:
+        servers = await list_mlflow_tracking_servers()
+        return {'tracking_servers': servers}
+    except Exception as e:
+        logger.error(f'Error listing MLflow Tracking Servers: {e}')
+        raise ValueError(f'Failed to list MLflow Tracking Servers: {e}')
+
+
 @mcp.tool(
     name='create_mlflow_tracking_server_sagemaker',
     description='Create a Managed MLflow Tracking Server in SageMaker',
@@ -1153,122 +1467,6 @@ async def create_mlflow_tracking_server_sagemaker(
 
 
 @mcp.tool(
-    name='delete_mlflow_tracking_server_sagemaker',
-    description='Delete a Managed MLflow Tracking Server in SageMaker',
-)
-async def delete_mlflow_tracking_server_sagemaker(
-    tracking_server_name: Annotated[
-        str, Field(description='The name of the MLflow Tracking Server to delete')
-    ],
-) -> Dict[str, str]:
-    """Delete a Managed MLflow Tracking Server in SageMaker.
-
-    ## Usage
-
-    Use this tool to delete a managed MLflow Tracking Server in SageMaker by providing
-    the server name. This is useful for cleaning up resources that are no longer needed.
-
-    ## Example
-
-    ```python
-    result = await delete_mlflow_tracking_server_sagemaker(
-        tracking_server_name='my-tracking-server'
-    )
-    print(result)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with a success message.
-
-    ## Returns
-    A dictionary containing a success message.
-    """
-    try:
-        await delete_mlflow_tracking_server(tracking_server_name)
-        return {'message': f"MLflow Tracking Server '{tracking_server_name}' deleted successfully"}
-    except Exception as e:
-        logger.error(f'Error deleting MLflow Tracking Server {tracking_server_name}: {e}')
-        raise ValueError(f'Failed to delete MLflow Tracking Server {tracking_server_name}: {e}')
-
-
-@mcp.tool(
-    name='list_mlflow_tracking_servers_sagemaker',
-    description='List all Managed MLflow Tracking Servers in SageMaker',
-)
-async def list_mlflow_tracking_servers_sagemaker() -> Dict[str, List]:
-    """List all Managed MLflow Tracking Servers in SageMaker.
-
-    ## Usage
-
-    Use this tool to retrieve a list of all managed MLflow Tracking Servers in your
-    SageMaker account. This is useful for seeing what tracking servers are available.
-
-    ## Example
-
-    ```python
-    servers = await list_mlflow_tracking_servers_sagemaker()
-    print(servers)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with the following structure:
-    - 'tracking_servers': A list of dictionaries, each representing a managed MLflow Tracking Server.
-
-    ## Returns
-    A dictionary containing a list of MLflow Tracking Servers.
-    """
-    try:
-        servers = await list_mlflow_tracking_servers()
-        return {'tracking_servers': servers}
-    except Exception as e:
-        logger.error(f'Error listing MLflow Tracking Servers: {e}')
-        raise ValueError(f'Failed to list MLflow Tracking Servers: {e}')
-
-
-@mcp.tool(
-    name='describe_mlflow_tracking_server_sagemaker',
-    description='Describe a Managed MLflow Tracking Server in SageMaker',
-)
-async def describe_mlflow_tracking_server_sagemaker(
-    tracking_server_name: Annotated[
-        str, Field(description='The name of the MLflow Tracking Server to describe')
-    ],
-) -> Dict[str, Any]:
-    """Describe a specified Managed MLflow Tracking Server in SageMaker.
-
-    ## Usage
-
-    Use this tool to get detailed information about a managed MLflow Tracking Server
-    by providing its name. This returns comprehensive information about the server's
-    configuration, status, and other details.
-
-    ## Example
-
-    ```python
-    server_details = await describe_mlflow_tracking_server_sagemaker(
-        tracking_server_name='my-tracking-server'
-    )
-    print(server_details)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary containing all the details of the MLflow Tracking Server.
-
-    ## Returns
-    A dictionary containing the tracking server details.
-    """
-    try:
-        server_details = await describe_mlflow_tracking_server(tracking_server_name)
-        return {'tracking_server_details': server_details}
-    except Exception as e:
-        logger.error(f'Error describing MLflow Tracking Server {tracking_server_name}: {e}')
-        raise ValueError(f'Failed to describe MLflow Tracking Server {tracking_server_name}: {e}')
-
-
-@mcp.tool(
     name='create_presigned_url_for_mlflow_tracking_server_sagemaker',
     description='Create a presigned URL for a Managed MLflow Tracking Server in SageMaker',
 )
@@ -1318,6 +1516,47 @@ async def create_presigned_url_for_mlflow_tracking_server_sagemaker(
         raise ValueError(
             f'Failed to create presigned URL for MLflow Tracking Server {tracking_server_name}: {e}'
         )
+
+
+@mcp.tool(
+    name='describe_mlflow_tracking_server_sagemaker',
+    description='Describe a Managed MLflow Tracking Server in SageMaker',
+)
+async def describe_mlflow_tracking_server_sagemaker(
+    tracking_server_name: Annotated[
+        str, Field(description='The name of the MLflow Tracking Server to describe')
+    ],
+) -> Dict[str, Any]:
+    """Describe a specified Managed MLflow Tracking Server in SageMaker.
+
+    ## Usage
+
+    Use this tool to get detailed information about a managed MLflow Tracking Server
+    by providing its name. This returns comprehensive information about the server's
+    configuration, status, and other details.
+
+    ## Example
+
+    ```python
+    server_details = await describe_mlflow_tracking_server_sagemaker(
+        tracking_server_name='my-tracking-server'
+    )
+    print(server_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the MLflow Tracking Server.
+
+    ## Returns
+    A dictionary containing the tracking server details.
+    """
+    try:
+        server_details = await describe_mlflow_tracking_server(tracking_server_name)
+        return {'tracking_server_details': server_details}
+    except Exception as e:
+        logger.error(f'Error describing MLflow Tracking Server {tracking_server_name}: {e}')
+        raise ValueError(f'Failed to describe MLflow Tracking Server {tracking_server_name}: {e}')
 
 
 @mcp.tool(
@@ -1398,21 +1637,28 @@ async def stop_mlflow_tracking_server_sagemaker(
         raise ValueError(f'Failed to stop MLflow Tracking Server {tracking_server_name}: {e}')
 
 
-@mcp.tool(name='delete_domain_sagemaker', description='Delete a SageMaker Domain')
-async def delete_domain_sagemaker(
-    domain_id: Annotated[str, Field(description='The ID of the SageMaker Domain to delete')],
+@mcp.tool(
+    name='delete_mlflow_tracking_server_sagemaker',
+    description='Delete a Managed MLflow Tracking Server in SageMaker',
+)
+async def delete_mlflow_tracking_server_sagemaker(
+    tracking_server_name: Annotated[
+        str, Field(description='The name of the MLflow Tracking Server to delete')
+    ],
 ) -> Dict[str, str]:
-    """Delete a specified SageMaker Domain.
+    """Delete a Managed MLflow Tracking Server in SageMaker.
 
     ## Usage
 
-    Use this tool to delete a SageMaker Domain by providing its ID. This is useful for cleaning
-    up domains that are no longer needed.
+    Use this tool to delete a managed MLflow Tracking Server in SageMaker by providing
+    the server name. This is useful for cleaning up resources that are no longer needed.
 
     ## Example
 
     ```python
-    result = await delete_domain_sagemaker(domain_id='d-1234567890')
+    result = await delete_mlflow_tracking_server_sagemaker(
+        tracking_server_name='my-tracking-server'
+    )
     print(result)
     ```
 
@@ -1424,11 +1670,14 @@ async def delete_domain_sagemaker(
     A dictionary containing a success message.
     """
     try:
-        await delete_domain(domain_id)
-        return {'message': f"Domain '{domain_id}' deleted successfully"}
+        await delete_mlflow_tracking_server(tracking_server_name)
+        return {'message': f"MLflow Tracking Server '{tracking_server_name}' deleted successfully"}
     except Exception as e:
-        logger.error(f'Error deleting domain {domain_id}: {e}')
-        raise ValueError(f'Failed to delete domain {domain_id}: {e}')
+        logger.error(f'Error deleting MLflow Tracking Server {tracking_server_name}: {e}')
+        raise ValueError(f'Failed to delete MLflow Tracking Server {tracking_server_name}: {e}')
+
+
+# ---SageMaker Domains  Tools---
 
 
 @mcp.tool(name='list_domains_sagemaker', description='List all SageMaker Domains')
@@ -1461,39 +1710,6 @@ async def list_domains_sagemaker() -> Dict[str, List]:
     except Exception as e:
         logger.error(f'Error listing domains: {e}')
         raise ValueError(f'Failed to list domains: {e}')
-
-
-@mcp.tool(name='describe_domain_sagemaker', description='Describe a SageMaker Domain')
-async def describe_domain_sagemaker(
-    domain_id: Annotated[str, Field(description='The ID of the SageMaker Domain to describe')],
-) -> Dict[str, Any]:
-    """Describe a specified SageMaker Domain.
-
-    ## Usage
-
-    Use this tool to get detailed information about a SageMaker Domain by providing its ID.
-    This returns comprehensive information about the domain's configuration, status, and other details.
-
-    ## Example
-
-    ```python
-    domain_details = await describe_domain_sagemaker(domain_id='d-1234567890')
-    print(domain_details)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary containing all the details of the SageMaker Domain.
-
-    ## Returns
-    A dictionary containing the domain details.
-    """
-    try:
-        domain_details = await describe_domain(domain_id)
-        return {'domain_details': domain_details}
-    except Exception as e:
-        logger.error(f'Error describing domain {domain_id}: {e}')
-        raise ValueError(f'Failed to describe domain {domain_id}: {e}')
 
 
 @mcp.tool(
@@ -1543,68 +1759,105 @@ async def create_presigned_url_for_domain_sagemaker(
         raise ValueError(f'Failed to create presigned URL for domain {domain_id}: {e}')
 
 
-@mcp.tool(name='list_spaces_sagemaker', description='List all SageMaker Spaces')
-async def list_spaces_sagemaker() -> Dict[str, List]:
-    """List all SageMaker Spaces.
+@mcp.tool(name='describe_domain_sagemaker', description='Describe a SageMaker Domain')
+async def describe_domain_sagemaker(
+    domain_id: Annotated[str, Field(description='The ID of the SageMaker Domain to describe')],
+) -> Dict[str, Any]:
+    """Describe a specified SageMaker Domain.
 
     ## Usage
 
-    Use this tool to retrieve a list of all SageMaker Spaces in your account in the current region.
-    This is typically used to see what spaces are available before performing operations on them.
+    Use this tool to get detailed information about a SageMaker Domain by providing its ID.
+    This returns comprehensive information about the domain's configuration, status, and other details.
 
     ## Example
 
     ```python
-    spaces = await list_spaces_sagemaker()
-    print(spaces)
+    domain_details = await describe_domain_sagemaker(domain_id='d-1234567890')
+    print(domain_details)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary containing all the details of the SageMaker Domain.
+
+    ## Returns
+    A dictionary containing the domain details.
+    """
+    try:
+        domain_details = await describe_domain(domain_id)
+        return {'domain_details': domain_details}
+    except Exception as e:
+        logger.error(f'Error describing domain {domain_id}: {e}')
+        raise ValueError(f'Failed to describe domain {domain_id}: {e}')
+
+
+@mcp.tool(name='delete_domain_sagemaker', description='Delete a SageMaker Domain')
+async def delete_domain_sagemaker(
+    domain_id: Annotated[str, Field(description='The ID of the SageMaker Domain to delete')],
+) -> Dict[str, str]:
+    """Delete a specified SageMaker Domain.
+
+    ## Usage
+
+    Use this tool to delete a SageMaker Domain by providing its ID. This is useful for cleaning
+    up domains that are no longer needed.
+
+    ## Example
+
+    ```python
+    result = await delete_domain_sagemaker(domain_id='d-1234567890')
+    print(result)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with a success message.
+
+    ## Returns
+    A dictionary containing a success message.
+    """
+    try:
+        await delete_domain(domain_id)
+        return {'message': f"Domain '{domain_id}' deleted successfully"}
+    except Exception as e:
+        logger.error(f'Error deleting domain {domain_id}: {e}')
+        raise ValueError(f'Failed to delete domain {domain_id}: {e}')
+
+
+# ---SageMaker Model Tools---
+
+
+@mcp.tool(name='list_models_sagemaker', description='List all SageMaker Models')
+async def list_models_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Models.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Models in your account in the current region.
+    This is typically used to see what models are available before performing operations on them.
+
+    ## Example
+
+    ```python
+    models = await list_models_sagemaker()
+    print(models)
     ```
 
     ## Output Format
 
     The output is a dictionary with the following structure:
-    - 'spaces': A list of dictionaries, each representing a SageMaker Space with its details.
+    - 'models': A list of dictionaries, each representing a SageMaker Model with its details.
 
     ## Returns
-    A dictionary containing a list of SageMaker Spaces.
+    A dictionary containing a list of SageMaker Models.
     """
     try:
-        spaces = await list_spaces()
-        return {'spaces': spaces}
+        models = await list_models()
+        return {'models': models}
     except Exception as e:
-        logger.error(f'Error listing spaces: {e}')
-        raise ValueError(f'Failed to list spaces: {e}')
-
-
-@mcp.tool(name='list_user_profiles_sagemaker', description='List all SageMaker User Profiles')
-async def list_user_profiles_sagemaker() -> Dict[str, List]:
-    """List all SageMaker User Profiles.
-
-    ## Usage
-
-    Use this tool to retrieve a list of all SageMaker User Profiles in your account in the current region.
-    This is typically used to see what user profiles are available before performing operations on them.
-
-    ## Example
-
-    ```python
-    user_profiles = await list_user_profiles_sagemaker()
-    print(user_profiles)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with the following structure:
-    - 'user_profiles': A list of dictionaries, each representing a SageMaker User Profile with its details.
-
-    ## Returns
-    A dictionary containing a list of SageMaker User Profiles.
-    """
-    try:
-        user_profiles = await list_user_profiles()
-        return {'user_profiles': user_profiles}
-    except Exception as e:
-        logger.error(f'Error listing user profiles: {e}')
-        raise ValueError(f'Failed to list user profiles: {e}')
+        logger.error(f'Error listing models: {e}')
+        raise ValueError(f'Failed to list models: {e}')
 
 
 @mcp.tool(name='describe_model_sagemaker', description='Describe a SageMaker Model')
@@ -1640,38 +1893,6 @@ async def describe_model_sagemaker(
         raise ValueError(f'Failed to describe model {model_name}: {e}')
 
 
-@mcp.tool(name='list_models_sagemaker', description='List all SageMaker Models')
-async def list_models_sagemaker() -> Dict[str, List]:
-    """List all SageMaker Models.
-
-    ## Usage
-
-    Use this tool to retrieve a list of all SageMaker Models in your account in the current region.
-    This is typically used to see what models are available before performing operations on them.
-
-    ## Example
-
-    ```python
-    models = await list_models_sagemaker()
-    print(models)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with the following structure:
-    - 'models': A list of dictionaries, each representing a SageMaker Model with its details.
-
-    ## Returns
-    A dictionary containing a list of SageMaker Models.
-    """
-    try:
-        models = await list_models()
-        return {'models': models}
-    except Exception as e:
-        logger.error(f'Error listing models: {e}')
-        raise ValueError(f'Failed to list models: {e}')
-
-
 @mcp.tool(name='delete_model_sagemaker', description='Delete a SageMaker Model')
 async def delete_model_sagemaker(
     model_name: Annotated[str, Field(description='The name of the SageMaker Model to delete')],
@@ -1705,74 +1926,7 @@ async def delete_model_sagemaker(
         raise ValueError(f'Failed to delete model {model_name}: {e}')
 
 
-@mcp.tool(name='describe_model_card_sagemaker', description='Describe a SageMaker Model Card')
-async def describe_model_card_sagemaker(
-    model_card_name: Annotated[
-        str, Field(description='The name of the SageMaker Model Card to describe')
-    ],
-) -> Dict[str, Any]:
-    """Describe a specified SageMaker Model Card.
-
-    ## Usage
-
-    Use this tool to get detailed information about a SageMaker Model Card by providing its name.
-    This returns comprehensive information about the model card's configuration, status, and other details.
-
-    ## Example
-
-    ```python
-    model_card_details = await describe_model_card_sagemaker(model_card_name='my-model-card')
-    print(model_card_details)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary containing all the details of the SageMaker Model Card.
-
-    ## Returns
-    A dictionary containing the model card details.
-    """
-    try:
-        model_card_details = await describe_model_card(model_card_name)
-        return {'model_card_details': model_card_details}
-    except Exception as e:
-        logger.error(f'Error describing model card {model_card_name}: {e}')
-        raise ValueError(f'Failed to describe model card {model_card_name}: {e}')
-
-
-@mcp.tool(name='delete_model_card_sagemaker', description='Delete a SageMaker Model Card')
-async def delete_model_card_sagemaker(
-    model_card_name: Annotated[
-        str, Field(description='The name of the SageMaker Model Card to delete')
-    ],
-) -> Dict[str, str]:
-    """Delete a specified SageMaker Model Card.
-
-    ## Usage
-
-    Use this tool to delete a SageMaker Model Card by providing its name. This is useful for cleaning up
-    model cards that are no longer needed.
-
-    ## Example
-
-    ```python
-    result = await delete_model_card_sagemaker(model_card_name='my-model-card')
-    print(result)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with a success message.
-
-    ## Returns
-    A dictionary containing a success message.
-    """
-    try:
-        await delete_model_card(model_card_name)
-        return {'message': f"Model Card '{model_card_name}' deleted successfully"}
-    except Exception as e:
-        logger.error(f'Error deleting model card {model_card_name}: {e}')
-        raise ValueError(f'Failed to delete model card {model_card_name}: {e}')
+# ---SageMaker Model Card Tools---
 
 
 @mcp.tool(name='list_model_cards_sagemaker', description='List all SageMaker Model Cards')
@@ -1885,147 +2039,58 @@ async def list_model_card_versions_sagemaker(
         raise ValueError(f'Failed to list model card versions for {model_card_name}: {e}')
 
 
-@mcp.tool(
-    name='list_inference_recommendations_jobs_sagemaker',
-    description='List all SageMaker Inference Recommender Jobs',
-)
-async def list_inference_recommendations_jobs_sagemaker() -> Dict[str, List]:
-    """List all SageMaker Inference Recommender Jobs.
-
-    ## Usage
-
-    Use this tool to retrieve a list of all SageMaker Inference Recommender Jobs
-    in your account in the current region. This is typically used to see what
-    inference recommender jobs are available before performing operations on them.
-
-    ## Example
-
-    ```python
-    jobs = await list_inference_recommendations_jobs_sagemaker()
-    print(jobs)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with the following structure:
-    - 'inference_recommendations_jobs': A list of dictionaries, each representing
-      a SageMaker Inference Recommender Job with its details.
-
-    ## Returns
-    A dictionary containing a list of SageMaker Inference Recommender Jobs.
-    """
-    try:
-        jobs = await list_inference_recommendations_jobs()
-        return {'inference_recommendations_jobs': jobs}
-    except Exception as e:
-        logger.error(f'Error listing inference recommender jobs: {e}')
-        raise ValueError(f'Failed to list inference recommender jobs: {e}')
-
-
-@mcp.tool(
-    name='list_inference_recommendations_job_steps_sagemaker',
-    description='List steps for a SageMaker Inference Recommender Job',
-)
-async def list_inference_recommendations_job_steps_sagemaker(
-    job_name: Annotated[
-        str,
-        Field(description='The name of the SageMaker Inference Recommender Job to list steps for'),
-    ],
-) -> Dict[str, List]:
-    """List steps for a specific SageMaker Inference Recommender Job.
-
-    ## Usage
-
-    Use this tool to retrieve a list of steps for a specific SageMaker Inference
-    Recommender Job by providing its name. This helps you track the progress of the job.
-
-    ## Example
-
-    ```python
-    steps = await list_inference_recommendations_job_steps_sagemaker(job_name='my-inference-job')
-    print(steps)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with the following structure:
-    - 'steps': A list of dictionaries, each representing a step in the SageMaker
-      Inference Recommender Job with its details.
-
-    ## Returns
-    A dictionary containing a list of steps for the specified Inference Recommender Job.
-    """
-    try:
-        steps = await list_inference_recommendations_job_steps(job_name)
-        return {'steps': steps}
-    except Exception as e:
-        logger.error(f'Error listing steps for inference recommender job {job_name}: {e}')
-        raise ValueError(f'Failed to list steps for inference recommender job {job_name}: {e}')
-
-
-@mcp.tool(
-    name='describe_inference_recommendations_job_sagemaker',
-    description='Describe a SageMaker Inference Recommender Job',
-)
-async def describe_inference_recommendations_job_sagemaker(
-    job_name: Annotated[
-        str, Field(description='The name of the SageMaker Inference Recommender Job to describe')
+@mcp.tool(name='describe_model_card_sagemaker', description='Describe a SageMaker Model Card')
+async def describe_model_card_sagemaker(
+    model_card_name: Annotated[
+        str, Field(description='The name of the SageMaker Model Card to describe')
     ],
 ) -> Dict[str, Any]:
-    """Describe a specified SageMaker Inference Recommender Job.
+    """Describe a specified SageMaker Model Card.
 
     ## Usage
 
-    Use this tool to get detailed information about a SageMaker Inference
-    Recommender Job by providing its name. This returns comprehensive information
-    about the job's configuration, status, and other details.
+    Use this tool to get detailed information about a SageMaker Model Card by providing its name.
+    This returns comprehensive information about the model card's configuration, status, and other details.
 
     ## Example
 
     ```python
-    job_details = await describe_inference_recommendations_job_sagemaker(
-        job_name='my-inference-job'
-    )
-    print(job_details)
+    model_card_details = await describe_model_card_sagemaker(model_card_name='my-model-card')
+    print(model_card_details)
     ```
 
     ## Output Format
 
-    The output is a dictionary containing all the details of the SageMaker
-    Inference Recommender Job.
+    The output is a dictionary containing all the details of the SageMaker Model Card.
 
     ## Returns
-    A dictionary containing the job details.
+    A dictionary containing the model card details.
     """
     try:
-        job_details = await describe_inference_recommendations_job(job_name)
-        return {'job_details': job_details}
+        model_card_details = await describe_model_card(model_card_name)
+        return {'model_card_details': model_card_details}
     except Exception as e:
-        logger.error(f'Error describing inference recommender job {job_name}: {e}')
-        raise ValueError(f'Failed to describe inference recommender job {job_name}: {e}')
+        logger.error(f'Error describing model card {model_card_name}: {e}')
+        raise ValueError(f'Failed to describe model card {model_card_name}: {e}')
 
 
-@mcp.tool(
-    name='stop_inference_recommendations_job_sagemaker',
-    description='Stop a SageMaker Inference Recommender Job',
-)
-async def stop_inference_recommendations_job_sagemaker(
-    job_name: Annotated[
-        str, Field(description='The name of the SageMaker Inference Recommender Job to stop')
+@mcp.tool(name='delete_model_card_sagemaker', description='Delete a SageMaker Model Card')
+async def delete_model_card_sagemaker(
+    model_card_name: Annotated[
+        str, Field(description='The name of the SageMaker Model Card to delete')
     ],
 ) -> Dict[str, str]:
-    """Stop a specified SageMaker Inference Recommender Job.
+    """Delete a specified SageMaker Model Card.
 
     ## Usage
 
-    Use this tool to stop a SageMaker Inference Recommender Job by providing its name.
-    This is useful for stopping jobs that are no longer needed or are consuming
-    too many resources.
+    Use this tool to delete a SageMaker Model Card by providing its name. This is useful for cleaning up
+    model cards that are no longer needed.
 
     ## Example
 
     ```python
-    result = await stop_inference_recommendations_job_sagemaker(job_name='my-inference-job')
+    result = await delete_model_card_sagemaker(model_card_name='my-model-card')
     print(result)
     ```
 
@@ -2037,14 +2102,49 @@ async def stop_inference_recommendations_job_sagemaker(
     A dictionary containing a success message.
     """
     try:
-        await stop_inference_recommendations_job(job_name)
-        return {'message': f"Inference Recommender Job '{job_name}' stopped successfully"}
+        await delete_model_card(model_card_name)
+        return {'message': f"Model Card '{model_card_name}' deleted successfully"}
     except Exception as e:
-        logger.error(f'Error stopping inference recommender job {job_name}: {e}')
-        raise ValueError(f'Failed to stop inference recommender job {job_name}: {e}')
+        logger.error(f'Error deleting model card {model_card_name}: {e}')
+        raise ValueError(f'Failed to delete model card {model_card_name}: {e}')
 
 
-# Tools for SageMaker AI Apps Operations
+# ---SageMaker App Tools---
+
+
+@mcp.tool(
+    name='list_apps_sagemaker',
+    description='List all SageMaker Apps',
+)
+async def list_apps_sagemaker() -> Dict[str, List]:
+    """List all SageMaker Apps.
+
+    ## Usage
+
+    Use this tool to retrieve a list of all SageMaker Apps in your account
+    in the current region.
+
+    ## Example
+
+    ```python
+    apps = await list_apps_sagemaker()
+    print(apps)
+    ```
+
+    ## Output Format
+
+    The output is a dictionary with the following structure:
+    - 'apps': A list of dictionaries, each representing a SageMaker App with its details.
+
+    ## Returns
+    A dictionary containing a list of SageMaker Apps.
+    """
+    try:
+        apps = await list_apps()
+        return {'apps': apps}
+    except Exception as e:
+        logger.error(f'Error listing apps: {e}')
+        raise ValueError(f'Failed to list apps: {e}')
 
 
 @mcp.tool(
@@ -2121,105 +2221,55 @@ async def create_app_sagemaker(
 
 
 @mcp.tool(
-    name='delete_app_sagemaker',
-    description='Delete a SageMaker App',
+    name='create_presigned_notebook_instance_url_sagemaker',
+    description='Create a presigned URL for a SageMaker Notebook Instance',
 )
-async def delete_app_sagemaker(
-    domain_id: Annotated[str, Field(description='The ID of the domain in which the app resides')],
-    user_profile_name: Annotated[
-        str,
-        Field(description='The name of the user profile that owns the app'),
+async def create_presigned_notebook_instance_url_sagemaker(
+    notebook_instance_name: Annotated[
+        str, Field(description='The name of the SageMaker Notebook Instance')
     ],
-    app_type: Annotated[
-        Literal[
-            'JupyterServer',
-            'KernelGateway',
-            'RStudioServerPro',
-            'RSessionGateway',
-            'Canvas',
-            'JupyterLab',
-            'CodeEditor',
-            'TensorBoard',
-            'DetailedProfiler',
-        ],
-        Field(description='The type of app to delete'),
-    ],
-    app_name: Annotated[str, Field(description='The name of the app to delete')],
+    session_expiration_duration_in_seconds: Annotated[
+        int,
+        Field(description='The expiration time for the presigned URL in seconds'),
+    ] = 3600,
 ) -> Dict[str, str]:
-    """Delete a SageMaker App.
+    """Create a presigned URL for a SageMaker Notebook Instance.
 
     ## Usage
 
-    Use this tool to delete a SageMaker App by providing the domain ID, user profile name,
-    app type, and app name.
+    Use this tool to create a presigned URL for accessing a SageMaker Notebook Instance
+    by providing its name and optional session expiration time.
 
     ## Example
 
     ```python
-    result = await delete_app_sagemaker(
-        domain_id='d-1234567890',
-        user_profile_name='user1',
-        app_type='JupyterServer',
-        app_name='my-jupyter-app',
+    url = await create_presigned_notebook_instance_url_sagemaker(
+        notebook_instance_name='my-notebook-instance'
     )
-    print(result)
+    print(url)
     ```
 
     ## Output Format
 
-    The output is a dictionary with a success message.
+    The output is a dictionary with the following structure:
+    - 'presigned_url': The presigned URL for the SageMaker Notebook Instance.
 
     ## Returns
-    A dictionary containing a success message.
+    A dictionary containing the presigned URL.
     """
     try:
-        await delete_app(
-            domain_id,
-            user_profile_name,
-            app_type,
-            app_name,
+        presigned_url = await create_presigned_notebook_instance_url(
+            notebook_instance_name,
+            session_expiration_duration_in_seconds,
         )
-        return {'message': f"App '{app_name}' deletion initiated successfully"}
+        return {'presigned_url': presigned_url}
     except Exception as e:
-        logger.error(f'Error deleting app {app_name}: {e}')
-        raise ValueError(f'Failed to delete app {app_name}: {e}')
-
-
-@mcp.tool(
-    name='delete_app_image_config_sagemaker',
-    description='Delete a SageMaker App Image Config',
-)
-async def delete_app_image_config_sagemaker(
-    app_image_config_name: Annotated[
-        str, Field(description='The name of the SageMaker App Image Config to delete')
-    ],
-) -> Dict[str, str]:
-    """Delete a SageMaker App Image Config.
-
-    ## Usage
-
-    Use this tool to delete a SageMaker App Image Config by providing its name.
-
-    ## Example
-
-    ```python
-    result = await delete_app_image_config_sagemaker(app_image_config_name='my-app-image-config')
-    print(result)
-    ```
-
-    ## Output Format
-
-    The output is a dictionary with a success message.
-
-    ## Returns
-    A dictionary containing a success message.
-    """
-    try:
-        await delete_app_image_config(app_image_config_name)
-        return {'message': f"App Image Config '{app_image_config_name}' deleted successfully"}
-    except Exception as e:
-        logger.error(f'Error deleting app image config {app_image_config_name}: {e}')
-        raise ValueError(f'Failed to delete app image config {app_image_config_name}: {e}')
+        logger.error(
+            f'Error creating presigned URL for notebook instance {notebook_instance_name}: {e}'
+        )
+        raise ValueError(
+            f'Failed to create presigned URL for notebook instance {notebook_instance_name}: {e}'
+        )
 
 
 @mcp.tool(
@@ -2328,90 +2378,105 @@ async def describe_app_image_config_sagemaker(
 
 
 @mcp.tool(
-    name='list_apps_sagemaker',
-    description='List all SageMaker Apps',
+    name='delete_app_sagemaker',
+    description='Delete a SageMaker App',
 )
-async def list_apps_sagemaker() -> Dict[str, List]:
-    """List all SageMaker Apps.
+async def delete_app_sagemaker(
+    domain_id: Annotated[str, Field(description='The ID of the domain in which the app resides')],
+    user_profile_name: Annotated[
+        str,
+        Field(description='The name of the user profile that owns the app'),
+    ],
+    app_type: Annotated[
+        Literal[
+            'JupyterServer',
+            'KernelGateway',
+            'RStudioServerPro',
+            'RSessionGateway',
+            'Canvas',
+            'JupyterLab',
+            'CodeEditor',
+            'TensorBoard',
+            'DetailedProfiler',
+        ],
+        Field(description='The type of app to delete'),
+    ],
+    app_name: Annotated[str, Field(description='The name of the app to delete')],
+) -> Dict[str, str]:
+    """Delete a SageMaker App.
 
     ## Usage
 
-    Use this tool to retrieve a list of all SageMaker Apps in your account
-    in the current region.
+    Use this tool to delete a SageMaker App by providing the domain ID, user profile name,
+    app type, and app name.
 
     ## Example
 
     ```python
-    apps = await list_apps_sagemaker()
-    print(apps)
+    result = await delete_app_sagemaker(
+        domain_id='d-1234567890',
+        user_profile_name='user1',
+        app_type='JupyterServer',
+        app_name='my-jupyter-app',
+    )
+    print(result)
     ```
 
     ## Output Format
 
-    The output is a dictionary with the following structure:
-    - 'apps': A list of dictionaries, each representing a SageMaker App with its details.
+    The output is a dictionary with a success message.
 
     ## Returns
-    A dictionary containing a list of SageMaker Apps.
+    A dictionary containing a success message.
     """
     try:
-        apps = await list_apps()
-        return {'apps': apps}
+        await delete_app(
+            domain_id,
+            user_profile_name,
+            app_type,
+            app_name,
+        )
+        return {'message': f"App '{app_name}' deletion initiated successfully"}
     except Exception as e:
-        logger.error(f'Error listing apps: {e}')
-        raise ValueError(f'Failed to list apps: {e}')
+        logger.error(f'Error deleting app {app_name}: {e}')
+        raise ValueError(f'Failed to delete app {app_name}: {e}')
 
 
 @mcp.tool(
-    name='create_presigned_notebook_instance_url_sagemaker',
-    description='Create a presigned URL for a SageMaker Notebook Instance',
+    name='delete_app_image_config_sagemaker',
+    description='Delete a SageMaker App Image Config',
 )
-async def create_presigned_notebook_instance_url_sagemaker(
-    notebook_instance_name: Annotated[
-        str, Field(description='The name of the SageMaker Notebook Instance')
+async def delete_app_image_config_sagemaker(
+    app_image_config_name: Annotated[
+        str, Field(description='The name of the SageMaker App Image Config to delete')
     ],
-    session_expiration_duration_in_seconds: Annotated[
-        int,
-        Field(description='The expiration time for the presigned URL in seconds'),
-    ] = 3600,
 ) -> Dict[str, str]:
-    """Create a presigned URL for a SageMaker Notebook Instance.
+    """Delete a SageMaker App Image Config.
 
     ## Usage
 
-    Use this tool to create a presigned URL for accessing a SageMaker Notebook Instance
-    by providing its name and optional session expiration time.
+    Use this tool to delete a SageMaker App Image Config by providing its name.
 
     ## Example
 
     ```python
-    url = await create_presigned_notebook_instance_url_sagemaker(
-        notebook_instance_name='my-notebook-instance'
-    )
-    print(url)
+    result = await delete_app_image_config_sagemaker(app_image_config_name='my-app-image-config')
+    print(result)
     ```
 
     ## Output Format
 
-    The output is a dictionary with the following structure:
-    - 'presigned_url': The presigned URL for the SageMaker Notebook Instance.
+    The output is a dictionary with a success message.
 
     ## Returns
-    A dictionary containing the presigned URL.
+    A dictionary containing a success message.
     """
     try:
-        presigned_url = await create_presigned_notebook_instance_url(
-            notebook_instance_name,
-            session_expiration_duration_in_seconds,
-        )
-        return {'presigned_url': presigned_url}
+        await delete_app_image_config(app_image_config_name)
+        return {'message': f"App Image Config '{app_image_config_name}' deleted successfully"}
     except Exception as e:
-        logger.error(
-            f'Error creating presigned URL for notebook instance {notebook_instance_name}: {e}'
-        )
-        raise ValueError(
-            f'Failed to create presigned URL for notebook instance {notebook_instance_name}: {e}'
-        )
+        logger.error(f'Error deleting app image config {app_image_config_name}: {e}')
+        raise ValueError(f'Failed to delete app image config {app_image_config_name}: {e}')
 
 
 def main():
