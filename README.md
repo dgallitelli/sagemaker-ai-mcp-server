@@ -49,11 +49,80 @@ Make sure the AWS profile has permissions to access Amazon SageMaker AI services
 
 ## Tools
 
-WIP
+### List of Tools for SageMaker AI Endpoints and Endpoint Configurations
+- list_endpoints_sagemaker (List all SageMaker AI Endpoints)
+- list_endpoint_configs_sagemaker (List all SageMaker AI Endpoint Configurations)
+- describe_endpoint_sagemaker (Describe a SageMaker AI Endpoint)
+- describe_endpoint_config_sagemaker (Describe a SageMaker AI Endpoint Configuration)
+- delete_endpoint_sagemaker (Delete a SageMaker AI Endpoint)
+- delete_endpoint_config_sagemaker (Delete a SageMaker AI Endpoint Configuration)
 
-## Example Usage
+### List of Tools for SageMaker AI Jobs
+- list_training_jobs_sagemaker (List all SageMaker AI Training Jobs)
+- list_processing_jobs_sagemaker (List all SageMaker AI Processing Jobs)
+- list_transform_jobs_sagemaker (List all SageMaker AI Transform Jobs)
+- list_inference_recommender_jobs_sagemaker (List all SageMaker AI Inference Recommender Jobs)
+- list_inference_recommender_job_steps_sagemaker (List all steps for a SageMaker AI Inference Recommender Job)
+- describe_training_job_sagemaker (Describe a SageMaker AI Training Job)
+- describe_processing_job_sagemaker (Describe a SageMaker AI Processing Job)
+- describe_transform_job_sagemaker (Describe a SageMaker AI Transform Job)
+- describe_inference_recommender_job_sagemaker (Describe a SageMaker AI Inference Recommender Job)
+- stop_training_job_sagemaker (Stop a SageMaker AI Training Job)
+- stop_processing_job_sagemaker (Stop a SageMaker AI Processing Job)
+- stop_transform_job_sagemaker (Stop a SageMaker AI Transform Job)
+- stop_inference_recommender_job_sagemaker (Stop a SageMaker AI Inference Recommender Job)
 
-WIP
+### List of Tools for SageMaker AI Pipelines
+- list_pipelines_sagemaker (List all SageMaker AI Pipelines)
+- list_pipeline_executions_sagemaker (List all Pipeline Executions for a SageMaker AI Pipeline)
+- list_pipeline_execution_steps_sagemaker (List all steps for a SageMaker AI Pipeline Execution)
+- list_pipeline_parameters_for_execution_sagemaker (List all parameters for a SageMaker AI Pipeline Execution)
+- describe_pipeline_sagemaker (Describe a SageMaker AI Pipeline)
+- describe_pipeline_execution_sagemaker (Describe a SageMaker AI Pipeline Execution)
+- describe_pipeline_definition_for_execution_sagemaker (Describe a SageMaker AI Pipeline Definition for Execution)
+- start_pipeline_execution_sagemaker (Start a SageMaker AI Pipeline Execution)
+- stop_pipeline_execution_sagemaker (Stop a SageMaker AI Pipeline Execution)
+- delete_pipeline_sagemaker (Delete a SageMaker AI Pipeline)
+
+### List of Tools for SageMaker AI User Profiles and Spaces
+- list_user_profiles_sagemaker (List all SageMaker AI User Profiles)
+- list_spaces_sagemaker (List all SageMaker AI Spaces)
+
+### List of Tools for SageMaker AI MLflow Managed Tracking Servers
+- list_mlflow_tracking_servers_sagemaker (List all MLflow Tracking Servers)
+- create_mlflow_tracking_server_sagemaker (Create a new MLflow Tracking Server)
+- create_presigned_mlflow_tracking_server_url_sagemaker (Create a presigned URL for an MLflow Tracking Server)
+- describe_mlflow_tracking_server_sagemaker (Describe an MLflow Tracking Server)
+- start_mlflow_tracking_server_sagemaker (Start an MLflow Tracking Server)
+- stop_mlflow_tracking_server_sagemaker (Stop an MLflow Tracking Server)
+- delete_mlflow_tracking_server_sagemaker (Delete an MLflow Tracking Server)
+
+### List of Tools for SageMaker AI Domains
+- list_domains_sagemaker (List all SageMaker AI Domains)
+- create_presigned_domain_url_sagemaker (Create a presigned URL for a SageMaker Domain)
+- describe_domain_sagemaker (Describe a SageMaker AI Domain)
+- delete_domain_sagemaker (Delete a SageMaker AI Domain)
+
+### List of Tools for SageMaker AI Models
+- list_models_sagemaker (List all SageMaker AI Models)
+- describe_model_sagemaker (Describe a SageMaker AI Model)
+- delete_model_sagemaker (Delete a SageMaker AI Model)
+
+### List of Tools for SageMaker AI Model Cards
+- list_model_cards_sagemaker (List all SageMaker AI Model Cards)
+- list_model_card_export_jobs_sagemaker (List all SageMaker AI Model Card Export Jobs)
+- list_model_card_versions_sagemaker (List all versions of a SageMaker AI Model Card)
+- describe_model_card_sagemaker (Describe a SageMaker AI Model Card)
+- delete_model_card_sagemaker (Delete a SageMaker AI Model Card)
+
+### List of Tools for SageMaker AI Apps
+- list_apps_sagemaker (List all SageMaker AI Apps)
+- create_app_sagemaker (Create a SageMaker AI App)
+- create_presigned_notebook_instance_url_sagemaker (Create a presigned URL for a SageMaker Notebook Instance)
+- describe_app_sagemaker (Describe a SageMaker AI App)
+- describe_app_image_config_sagemaker (Describe a SageMaker AI App Image Config)
+- delete_app_sagemaker (Delete a SageMaker AI App)
+- delete_app_image_config_sagemaker (Delete a SageMaker AI App Image Config)
 
 ## Security Considerations
 
