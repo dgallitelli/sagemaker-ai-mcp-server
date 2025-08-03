@@ -21,6 +21,7 @@ async def test_list_models(mock_get_sagemaker_client):
     expected = [{'ModelName': 'test-model', 'CreationTime': '2023-01-01T00:00:00Z'}]
     assert models == expected
 
+
 @pytest.mark.asyncio
 @patch('sagemaker_ai_mcp_server.helpers.models.get_sagemaker_client')
 async def test_describe_model(mock_get_sagemaker_client):
@@ -39,6 +40,7 @@ async def test_describe_model(mock_get_sagemaker_client):
     mock_get_sagemaker_client.assert_called_once()
     mock_client.describe_model.assert_called_once_with(ModelName='test-model')
     assert response == expected_response
+
 
 @pytest.mark.asyncio
 @patch('sagemaker_ai_mcp_server.helpers.models.get_sagemaker_client')
