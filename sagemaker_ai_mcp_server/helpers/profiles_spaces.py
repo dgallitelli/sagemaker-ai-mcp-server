@@ -1,4 +1,4 @@
-"""Helper Functions for Profile Ops"""
+"""Helper Functions for Profile Ops."""
 
 from loguru import logger
 from sagemaker_ai_mcp_server.helpers.utils import get_sagemaker_client

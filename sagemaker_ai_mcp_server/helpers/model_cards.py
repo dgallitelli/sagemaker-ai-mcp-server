@@ -1,4 +1,4 @@
-"""Helper Functions for SageMaker Model Cards"""
+"""Helper Functions for SageMaker Model Cards."""
 
 from loguru import logger
 from sagemaker_ai_mcp_server.helpers.utils import get_sagemaker_client

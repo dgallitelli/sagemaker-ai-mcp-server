@@ -1,4 +1,4 @@
-"""Helper Functions for SageMaker Managed MLflow"""
+"""Helper Functions for SageMaker Managed MLflow."""
 
 from loguru import logger
 from sagemaker_ai_mcp_server.helpers.utils import (

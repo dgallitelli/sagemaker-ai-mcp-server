@@ -1,4 +1,4 @@
-"""Utils Functions for Region, Execution Role, Sessions, SageMaker client"""
+"""Utils Functions for Region, Execution Role, Sessions, SageMaker client."""
 
 import boto3
 import os

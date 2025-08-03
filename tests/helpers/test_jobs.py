@@ -213,6 +213,7 @@ async def test_stop_transform_job(mock_get_sagemaker_client):
 @pytest.mark.asyncio
 @patch('sagemaker_ai_mcp_server.helpers.jobs.get_sagemaker_client')
 async def test_stop_inference_recommendations_job(mock_get_sagemaker_client):
+    """Test stopping a SageMaker AI Inference Recommendations Job."""
     job_name = 'test-job'
     mock_client = MagicMock()
     mock_get_sagemaker_client.return_value = mock_client

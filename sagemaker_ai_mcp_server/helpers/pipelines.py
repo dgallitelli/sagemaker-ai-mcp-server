@@ -1,4 +1,4 @@
-"""Helper Functions for SageMaker Pipelines"""
+"""Helper Functions for SageMaker Pipelines."""
 
 from loguru import logger
 from sagemaker_ai_mcp_server.helpers.utils import get_sagemaker_client

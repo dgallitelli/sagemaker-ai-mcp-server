@@ -1,4 +1,4 @@
-"""Helper Functions for SageMaker Jobs(Training, Processing, Transform, Inference Recommender)"""
+"""Helper Functions for SageMaker Jobs(Training, Processing, Transform, Inference Recommender)."""
 
 from loguru import logger
 from sagemaker_ai_mcp_server.helpers.utils import get_sagemaker_client
